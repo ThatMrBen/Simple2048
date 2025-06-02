@@ -1,0 +1,2419 @@
+:root {
+    --board-bg: #bbada0;
+    --cell-bg: #cdc1b4;
+    --text-dark: #776e65;
+    --text-light: #f9f6f2;
+    --score-box-bg: #bbada0;
+    --button-bg: #8f7a66;
+    --button-hover-bg: #a0866c;
+    --game-bg: #faf8ef;
+    --footer-text-color: #aaaaaa;
+    --footer-link-hover-color: #888888;
+}
+
+/* 基础样式 */
+body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    background: var(--game-bg);
+    margin: 0;
+    padding: 0 10px;
+    color: var(--text-dark);
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.game-wrapper {
+    width: 100%;
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 0 10px;
+    box-sizing: border-box;
+}
+
+/* 头部样式 */
+.game-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.header-title-action-mobile-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+#info-button { 
+    grid-column: 1; 
+    justify-self: start; 
+}
+
+#game-title-text {
+    grid-column: 2;
+    margin: 0;
+    font-size: 2.2em;
+    color: var(--text-dark);
+    font-weight: 900;
+    text-align: center;
+}
+
+#screenshot-stats-display {
+    width: 100%;
+    text-align: center;
+    font-size: 0.95em;
+    color: var(--text-dark);
+    margin-top: 10px;
+    margin-bottom: 0;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out, margin-top 0.3s ease-out;
+}
+
+#screenshot-stats-display.visible {
+    max-height: 50px;
+    opacity: 1;
+}
+
+#screenshot-stats-display strong {
+    font-weight: bold;
+}
+
+/* 分数区域样式 */
+.header-scores-container {
+    display: flex;
+    gap: 5px;
+    justify-content: space-around;
+    width: 100%;
+    min-width: 0;
+}
+
+.score-box {
+    background: var(--score-box-bg);
+    color: var(--text-light);
+    padding: 5px 8px;
+    border-radius: 3px;
+    text-align: center;
+    min-width: 100px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.score-box:hover {
+    transform: translateY(-2px);
+}
+
+.score-label {
+    display: block;
+    font-size: 0.85em;
+    color: #eee4da;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+    line-height: 1;
+    font-weight: bold;
+}
+
+.score-value {
+    font-size: 1.5em;
+    font-weight: bold;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+.score-moves-label {
+    display: block;
+    font-size: 0.7em;
+    color: #eee4da;
+    line-height: 1;
+}
+
+/* 头部按钮样式 */
+.header-icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-dark);
+    font-size: 1.9em;
+    padding: 0 5px;
+    cursor: pointer;
+    line-height: 1;
+    flex-shrink: 0;
+    min-width: 30px;
+    text-align: center;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+}
+
+.header-icon-btn:hover {
+    opacity: 0.7;
+    transform: scale(1.1);
+}
+
+.header-icon-btn:active {
+    transform: scale(0.95);
+}
+
+/* 游戏棋盘样式 */
+#game-board {
+    background: var(--board-bg);
+    border-radius: 6px;
+    padding: 10px;
+    width: 100%;
+    max-width: 330px;
+    min-width: 250px;
+    aspect-ratio: 1 / 1;
+    box-sizing: border-box;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 10px;
+    touch-action: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#game-board:active {
+    transform: scale(0.98);
+}
+
+/* 单元格样式 */
+.cell {
+    background: var(--cell-bg);
+    border-radius: 3px;
+    font-size: clamp(1.2em, 5vmin, 2em);
+    font-weight: bold;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    transition: background 0.2s ease-out, color 0.2s ease-out, transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 不同数值单元格的颜色 */
+.cell-2    { background: #eee4da; color: var(--text-dark); }
+.cell-4    { background: #ede0c8; color: var(--text-dark); }
+.cell-8    { background: #f2b179; color: var(--text-light); }
+.cell-16   { background: #f59563; color: var(--text-light); }
+.cell-32   { background: #f67c5f; color: var(--text-light); }
+.cell-64   { background: #f65e3b; color: var(--text-light); }
+.cell-128  { background: #edcf72; color: var(--text-light); }
+.cell-256  { background: #edcc61; color: var(--text-light); }
+.cell-512  { background: #edc850; color: var(--text-light); }
+.cell-1024 { background: #edc53f; color: var(--text-light); }
+.cell-2048 { background: #edc22e; color: var(--text-light); }
+.cell-4096 { background: #3c3a32; color: var(--text-light); }
+.cell-8192 { background: #3c3a32; color: var(--text-light); }
+
+/* 合并动画 */
+.cell-merged { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+@keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    65% { transform: scale(0.95); }
+    80% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* 弹窗样式 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    backdrop-filter: blur(2px);
+}
+
+.modal-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.modal-content {
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    background: var(--game-bg);
+    padding: 20px 25px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+    color: var(--text-dark);
+    transform: scale(0.9);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 90%;
+    width: auto;
+    min-width: 280px;
+    position: relative;
+}
+
+#info-modal .modal-content {
+    max-width: 600px;
+}
+
+.modal-overlay.active .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.modal-content p {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+#game-over-modal #modal-steps-score-text {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+#game-over-modal #modal-feedback-text {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.modal-feedback {
+    font-size: 0.95em;
+    color: var(--text-dark);
+}
+
+.modal-feedback strong {
+    font-weight: bold;
+}
+
+/* 弹窗按钮样式 */
+#modal-restart-button,
+.modal-action-button,
+#restart-confirm-yes,
+#restart-confirm-no,
+#modal-screenshot-button {
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    background: var(--button-bg);
+    color: var(--text-light);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    padding: 10px 20px;
+    font-size: 1em;
+    font-weight: bold;
+    min-width: 100px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#modal-restart-button:hover,
+.modal-action-button:hover,
+#restart-confirm-yes:hover,
+#restart-confirm-no:hover,
+#modal-screenshot-button:hover {
+    background: var(--button-hover-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+#modal-restart-button:active,
+.modal-action-button:active,
+#restart-confirm-yes:active,
+#restart-confirm-no:active,
+#modal-screenshot-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
+}
+
+#restart-confirm-no {
+    background-color: #776e65;
+}
+
+#restart-confirm-no:hover {
+    background-color: #5e554e;
+}
+
+/* 弹窗关闭按钮 */
+.modal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.8em;
+    font-weight: bold;
+    color: var(--text-dark);
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+    padding: 5px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.modal-close-btn:hover {
+    color: #333;
+    transform: rotate(90deg);
+}
+
+/* 信息弹窗内容样式 */
+#info-modal-content {
+    text-align: left;
+    max-height: 60vh;
+    overflow-y: auto;
+    font-size: 0.9em;
+    line-height: 1.6;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+#info-modal-content strong {
+    font-weight: bold;
+}
+
+#info-modal-content code {
+    background-color: #f0f0f0;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+}
+
+#info-modal-content ol,
+#info-modal-content ul {
+    padding-left: 20px;
+}
+
+#info-modal-content br+br {
+    display: block;
+    margin-bottom: 0.5em;
+}
+
+#info-modal-content .secret-message-container br {
+    margin-bottom: 0;
+}
+
+#info-modal-content a {
+    color: var(--text-dark);
+    text-decoration: underline;
+}
+
+#info-modal-content a:hover {
+    color: var(--button-hover-bg);
+}
+
+/* 存档/读档区域样式 */
+.save-load-section {
+    margin-bottom: 15px;
+}
+
+.save-load-section h3 {
+    font-size: 1.2em;
+    margin-bottom: 8px;
+}
+
+.save-load-section textarea {
+    width: calc(100% - 20px);
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    padding: 8px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    resize: vertical;
+    box-sizing: border-box;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+/* 彩带效果 */
+.confetti-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    border-radius: 50%;
+}
+
+/* 提示通知样式 */
+#toast-notification {
+    position: fixed;
+    left: 50%;
+    top: 25%;
+    transform: translate(-50%, -50%);
+    padding: 15px 25px;
+    border-radius: 8px;
+    z-index: 10000;
+    text-align: center;
+    font-size: 1.1em;
+    font-weight: bold;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+#toast-notification.success {
+    background-color: rgba(0, 0, 0, 0.75);
+    color: var(--text-light);
+}
+
+#toast-notification.error {
+    background-color: rgba(200, 50, 50, 0.85);
+    color: var(--text-light);
+}
+
+#toast-notification.warning {
+    background-color: rgba(230, 160, 0, 0.85);
+    color: #333;
+}
+
+#toast-notification.info_dark {
+    background-color: rgba(20, 20, 20, 0.9);
+    color: white;
+    font-size: 1em;
+    padding: 12px 20px;
+}
+
+#toast-notification.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#toast-notification:not(.visible) {
+    transform: translate(-50%, -70%) scale(0.95);
+}
+
+/* 页脚样式 */
+#footer-credit {
+    text-align: center;
+    padding: 20px 10px;
+    font-size: 0.8em;
+    color: var(--footer-text-color);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#footer-credit a {
+    color: var(--footer-text-color);
+    text-decoration: underline;
+}
+
+#footer-credit a:hover {
+    color: var(--footer-link-hover-color);
+}
+
+/* 游戏结束统计信息样式 */
+.game-end-stats {
+    text-align: center;
+    padding: 10px 15px;
+    margin: 10px 0;
+    background-color: rgba(238, 228, 218, 0.85);
+    border-radius: 6px;
+    font-size: 1.1em;
+    color: var(--text-dark);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.game-end-stats strong {
+    font-weight: bold;
+    color: #776e65;
+}
+
+/* 响应式布局 */
+@media (max-width: 600px) {
+    .game-wrapper {
+        margin: 10px auto;
+        padding: 0 5px;
+        max-width: 100%;
+    }
+    
+    #game-board {
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .modal-content {
+        max-width: calc(100% - 30px);
+        padding: 15px;
+    }
+    
+    .modal-content h2 {
+        font-size: 1.3em;
+    }
+}
+
+@media (max-width: 480px) {
+    #info-modal-content {
+        max-height: 70vh;
+    }
+    
+    .score-box {
+        min-width: 90px;
+    }
+    
+    .score-value {
+        font-size: 1.3em;
+    }
+    
+    .score-moves-label {
+        font-size: 0.65em;
+    }
+}
+
+/* 新数字块生成动画 */
+.cell-new { animation: appear 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); }
+
+@keyframes appear {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.03); opacity: 1; }
+    80% { transform: scale(0.99); }
+    100% { transform: scale(1); }
+}
+
+#info-modal .modal-content {
+    max-width: 600px;
+}
+
+.modal-overlay.active .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.modal-content p {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+#game-over-modal #modal-steps-score-text {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+#game-over-modal #modal-feedback-text {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.modal-feedback {
+    font-size: 0.95em;
+    color: var(--text-dark);
+}
+
+.modal-feedback strong {
+    font-weight: bold;
+}
+
+/* 弹窗按钮样式 */
+#modal-restart-button,
+.modal-action-button,
+#restart-confirm-yes,
+#restart-confirm-no,
+#modal-screenshot-button {
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    background: var(--button-bg);
+    color: var(--text-light);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    padding: 10px 20px;
+    font-size: 1em;
+    font-weight: bold;
+    min-width: 100px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#modal-restart-button:hover,
+.modal-action-button:hover,
+#restart-confirm-yes:hover,
+#restart-confirm-no:hover,
+#modal-screenshot-button:hover {
+    background: var(--button-hover-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+#modal-restart-button:active,
+.modal-action-button:active,
+#restart-confirm-yes:active,
+#restart-confirm-no:active,
+#modal-screenshot-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
+}
+
+#restart-confirm-no {
+    background-color: #776e65;
+}
+
+#restart-confirm-no:hover {
+    background-color: #5e554e;
+}
+
+/* 弹窗关闭按钮 */
+.modal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.8em;
+    font-weight: bold;
+    color: var(--text-dark);
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+    padding: 5px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.modal-close-btn:hover {
+    color: #333;
+    transform: rotate(90deg);
+}
+
+/* 信息弹窗内容样式 */
+#info-modal-content {
+    text-align: left;
+    max-height: 60vh;
+    overflow-y: auto;
+    font-size: 0.9em;
+    line-height: 1.6;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+#info-modal-content strong {
+    font-weight: bold;
+}
+
+#info-modal-content code {
+    background-color: #f0f0f0;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+}
+
+#info-modal-content ol,
+#info-modal-content ul {
+    padding-left: 20px;
+}
+
+#info-modal-content br+br {
+    display: block;
+    margin-bottom: 0.5em;
+}
+
+#info-modal-content .secret-message-container br {
+    margin-bottom: 0;
+}
+
+#info-modal-content a {
+    color: var(--text-dark);
+    text-decoration: underline;
+}
+
+#info-modal-content a:hover {
+    color: var(--button-hover-bg);
+}
+
+/* 存档/读档区域样式 */
+.save-load-section {
+    margin-bottom: 15px;
+}
+
+.save-load-section h3 {
+    font-size: 1.2em;
+    margin-bottom: 8px;
+}
+
+.save-load-section textarea {
+    width: calc(100% - 20px);
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    padding: 8px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    resize: vertical;
+    box-sizing: border-box;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+/* 彩带效果 */
+.confetti-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    border-radius: 50%;
+}
+
+/* 提示通知样式 */
+#toast-notification {
+    position: fixed;
+    left: 50%;
+    top: 25%;
+    transform: translate(-50%, -50%);
+    padding: 15px 25px;
+    border-radius: 8px;
+    z-index: 10000;
+    text-align: center;
+    font-size: 1.1em;
+    font-weight: bold;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+#toast-notification.success {
+    background-color: rgba(0, 0, 0, 0.75);
+    color: var(--text-light);
+}
+
+#toast-notification.error {
+    background-color: rgba(200, 50, 50, 0.85);
+    color: var(--text-light);
+}
+
+#toast-notification.warning {
+    background-color: rgba(230, 160, 0, 0.85);
+    color: #333;
+}
+
+#toast-notification.info_dark {
+    background-color: rgba(20, 20, 20, 0.9);
+    color: white;
+    font-size: 1em;
+    padding: 12px 20px;
+}
+
+#toast-notification.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#toast-notification:not(.visible) {
+    transform: translate(-50%, -70%) scale(0.95);
+}
+
+/* 页脚样式 */
+#footer-credit {
+    text-align: center;
+    padding: 20px 10px;
+    font-size: 0.8em;
+    color: var(--footer-text-color);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#footer-credit a {
+    color: var(--footer-text-color);
+    text-decoration: underline;
+}
+
+#footer-credit a:hover {
+    color: var(--footer-link-hover-color);
+}
+
+/* 游戏结束统计信息样式 */
+.game-end-stats {
+    text-align: center;
+    padding: 10px 15px;
+    margin: 10px 0;
+    background-color: rgba(238, 228, 218, 0.85);
+    border-radius: 6px;
+    font-size: 1.1em;
+    color: var(--text-dark);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.game-end-stats strong {
+    font-weight: bold;
+    color: #776e65;
+}
+
+/* 响应式布局 */
+@media (max-width: 600px) {
+    .game-wrapper {
+        margin: 10px auto;
+        padding: 0 5px;
+        max-width: 100%;
+    }
+    
+    #game-board {
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .modal-content {
+        max-width: calc(100% - 30px);
+        padding: 15px;
+    }
+    
+    .modal-content h2 {
+        font-size: 1.3em;
+    }
+}
+
+@media (max-width: 480px) {
+    #info-modal-content {
+        max-height: 70vh;
+    }
+    
+    .score-box {
+        min-width: 90px;
+    }
+    
+    .score-value {
+        font-size: 1.3em;
+    }
+    
+    .score-moves-label {
+        font-size: 0.65em;
+    }
+}
+
+#info-modal .modal-content {
+    max-width: 600px;
+}
+
+.modal-overlay.active .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.modal-content p {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+#game-over-modal #modal-steps-score-text {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+#game-over-modal #modal-feedback-text {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.modal-feedback {
+    font-size: 0.95em;
+    color: var(--text-dark);
+}
+
+.modal-feedback strong {
+    font-weight: bold;
+}
+
+/* 弹窗按钮样式 */
+#modal-restart-button,
+.modal-action-button,
+#restart-confirm-yes,
+#restart-confirm-no,
+#modal-screenshot-button {
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    background: var(--button-bg);
+    color: var(--text-light);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    padding: 10px 20px;
+    font-size: 1em;
+    font-weight: bold;
+    min-width: 100px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#modal-restart-button:hover,
+.modal-action-button:hover,
+#restart-confirm-yes:hover,
+#restart-confirm-no:hover,
+#modal-screenshot-button:hover {
+    background: var(--button-hover-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+#modal-restart-button:active,
+.modal-action-button:active,
+#restart-confirm-yes:active,
+#restart-confirm-no:active,
+#modal-screenshot-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
+}
+
+#restart-confirm-no {
+    background-color: #776e65;
+}
+
+#restart-confirm-no:hover {
+    background-color: #5e554e;
+}
+
+/* 弹窗关闭按钮 */
+.modal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.8em;
+    font-weight: bold;
+    color: var(--text-dark);
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+    padding: 5px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.modal-close-btn:hover {
+    color: #333;
+    transform: rotate(90deg);
+}
+
+/* 信息弹窗内容样式 */
+#info-modal-content {
+    text-align: left;
+    max-height: 60vh;
+    overflow-y: auto;
+    font-size: 0.9em;
+    line-height: 1.6;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+#info-modal-content strong {
+    font-weight: bold;
+}
+
+#info-modal-content code {
+    background-color: #f0f0f0;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+}
+
+#info-modal-content ol,
+#info-modal-content ul {
+    padding-left: 20px;
+}
+
+#info-modal-content br+br {
+    display: block;
+    margin-bottom: 0.5em;
+}
+
+#info-modal-content .secret-message-container br {
+    margin-bottom: 0;
+}
+
+#info-modal-content a {
+    color: var(--text-dark);
+    text-decoration: underline;
+}
+
+#info-modal-content a:hover {
+    color: var(--button-hover-bg);
+}
+
+/* 存档/读档区域样式 */
+.save-load-section {
+    margin-bottom: 15px;
+}
+
+.save-load-section h3 {
+    font-size: 1.2em;
+    margin-bottom: 8px;
+}
+
+.save-load-section textarea {
+    width: calc(100% - 20px);
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    padding: 8px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    resize: vertical;
+    box-sizing: border-box;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+/* 彩带效果 */
+.confetti-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    border-radius: 50%;
+}
+
+/* 提示通知样式 */
+#toast-notification {
+    position: fixed;
+    left: 50%;
+    top: 25%;
+    transform: translate(-50%, -50%);
+    padding: 15px 25px;
+    border-radius: 8px;
+    z-index: 10000;
+    text-align: center;
+    font-size: 1.1em;
+    font-weight: bold;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+#toast-notification.success {
+    background-color: rgba(0, 0, 0, 0.75);
+    color: var(--text-light);
+}
+
+#toast-notification.error {
+    background-color: rgba(200, 50, 50, 0.85);
+    color: var(--text-light);
+}
+
+#toast-notification.warning {
+    background-color: rgba(230, 160, 0, 0.85);
+    color: #333;
+}
+
+#toast-notification.info_dark {
+    background-color: rgba(20, 20, 20, 0.9);
+    color: white;
+    font-size: 1em;
+    padding: 12px 20px;
+}
+
+#toast-notification.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#toast-notification:not(.visible) {
+    transform: translate(-50%, -70%) scale(0.95);
+}
+
+/* 页脚样式 */
+#footer-credit {
+    text-align: center;
+    padding: 20px 10px;
+    font-size: 0.8em;
+    color: var(--footer-text-color);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#footer-credit a {
+    color: var(--footer-text-color);
+    text-decoration: underline;
+}
+
+#footer-credit a:hover {
+    color: var(--footer-link-hover-color);
+}
+
+/* 游戏结束统计信息样式 */
+.game-end-stats {
+    text-align: center;
+    padding: 10px 15px;
+    margin: 10px 0;
+    background-color: rgba(238, 228, 218, 0.85);
+    border-radius: 6px;
+    font-size: 1.1em;
+    color: var(--text-dark);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.game-end-stats strong {
+    font-weight: bold;
+    color: #776e65;
+}
+
+/* 响应式布局 */
+@media (max-width: 600px) {
+    .game-wrapper {
+        margin: 10px auto;
+        padding: 0 5px;
+        max-width: 100%;
+    }
+    
+    #game-board {
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .modal-content {
+        max-width: calc(100% - 30px);
+        padding: 15px;
+    }
+    
+    .modal-content h2 {
+        font-size: 1.3em;
+    }
+}
+
+@media (max-width: 480px) {
+    #info-modal-content {
+        max-height: 70vh;
+    }
+    
+    .score-box {
+        min-width: 90px;
+    }
+    
+    .score-value {
+        font-size: 1.3em;
+    }
+    
+    .score-moves-label {
+        font-size: 0.65em;
+    }
+}
+
+#info-modal .modal-content {
+    max-width: 600px;
+}
+
+.modal-overlay.active .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.modal-content p {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+#game-over-modal #modal-steps-score-text {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+#game-over-modal #modal-feedback-text {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.modal-feedback {
+    font-size: 0.95em;
+    color: var(--text-dark);
+}
+
+.modal-feedback strong {
+    font-weight: bold;
+}
+
+/* 弹窗按钮样式 */
+#modal-restart-button,
+.modal-action-button,
+#restart-confirm-yes,
+#restart-confirm-no,
+#modal-screenshot-button {
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    background: var(--button-bg);
+    color: var(--text-light);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    padding: 10px 20px;
+    font-size: 1em;
+    font-weight: bold;
+    min-width: 100px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#modal-restart-button:hover,
+.modal-action-button:hover,
+#restart-confirm-yes:hover,
+#restart-confirm-no:hover,
+#modal-screenshot-button:hover {
+    background: var(--button-hover-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+#modal-restart-button:active,
+.modal-action-button:active,
+#restart-confirm-yes:active,
+#restart-confirm-no:active,
+#modal-screenshot-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
+}
+
+#restart-confirm-no {
+    background-color: #776e65;
+}
+
+#restart-confirm-no:hover {
+    background-color: #5e554e;
+}
+
+/* 弹窗关闭按钮 */
+.modal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.8em;
+    font-weight: bold;
+    color: var(--text-dark);
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+    padding: 5px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.modal-close-btn:hover {
+    color: #333;
+    transform: rotate(90deg);
+}
+
+/* 信息弹窗内容样式 */
+#info-modal-content {
+    text-align: left;
+    max-height: 60vh;
+    overflow-y: auto;
+    font-size: 0.9em;
+    line-height: 1.6;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+#info-modal-content strong {
+    font-weight: bold;
+}
+
+#info-modal-content code {
+    background-color: #f0f0f0;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+}
+
+#info-modal-content ol,
+#info-modal-content ul {
+    padding-left: 20px;
+}
+
+#info-modal-content br+br {
+    display: block;
+    margin-bottom: 0.5em;
+}
+
+#info-modal-content .secret-message-container br {
+    margin-bottom: 0;
+}
+
+#info-modal-content a {
+    color: var(--text-dark);
+    text-decoration: underline;
+}
+
+#info-modal-content a:hover {
+    color: var(--button-hover-bg);
+}
+
+/* 存档/读档区域样式 */
+.save-load-section {
+    margin-bottom: 15px;
+}
+
+.save-load-section h3 {
+    font-size: 1.2em;
+    margin-bottom: 8px;
+}
+
+.save-load-section textarea {
+    width: calc(100% - 20px);
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    padding: 8px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    resize: vertical;
+    box-sizing: border-box;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+/* 彩带效果 */
+.confetti-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    border-radius: 50%;
+}
+
+/* 提示通知样式 */
+#toast-notification {
+    position: fixed;
+    left: 50%;
+    top: 25%;
+    transform: translate(-50%, -50%);
+    padding: 15px 25px;
+    border-radius: 8px;
+    z-index: 10000;
+    text-align: center;
+    font-size: 1.1em;
+    font-weight: bold;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+#toast-notification.success {
+    background-color: rgba(0, 0, 0, 0.75);
+    color: var(--text-light);
+}
+
+#toast-notification.error {
+    background-color: rgba(200, 50, 50, 0.85);
+    color: var(--text-light);
+}
+
+#toast-notification.warning {
+    background-color: rgba(230, 160, 0, 0.85);
+    color: #333;
+}
+
+#toast-notification.info_dark {
+    background-color: rgba(20, 20, 20, 0.9);
+    color: white;
+    font-size: 1em;
+    padding: 12px 20px;
+}
+
+#toast-notification.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#toast-notification:not(.visible) {
+    transform: translate(-50%, -70%) scale(0.95);
+}
+
+/* 页脚样式 */
+#footer-credit {
+    text-align: center;
+    padding: 20px 10px;
+    font-size: 0.8em;
+    color: var(--footer-text-color);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#footer-credit a {
+    color: var(--footer-text-color);
+    text-decoration: underline;
+}
+
+#footer-credit a:hover {
+    color: var(--footer-link-hover-color);
+}
+
+/* 游戏结束统计信息样式 */
+.game-end-stats {
+    text-align: center;
+    padding: 10px 15px;
+    margin: 10px 0;
+    background-color: rgba(238, 228, 218, 0.85);
+    border-radius: 6px;
+    font-size: 1.1em;
+    color: var(--text-dark);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.game-end-stats strong {
+    font-weight: bold;
+    color: #776e65;
+}
+
+/* 响应式布局 */
+@media (max-width: 600px) {
+    .game-wrapper {
+        margin: 10px auto;
+        padding: 0 5px;
+        max-width: 100%;
+    }
+    
+    #game-board {
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .modal-content {
+        max-width: calc(100% - 30px);
+        padding: 15px;
+    }
+    
+    .modal-content h2 {
+        font-size: 1.3em;
+    }
+}
+
+@media (max-width: 480px) {
+    #info-modal-content {
+        max-height: 70vh;
+    }
+    
+    .score-box {
+        min-width: 90px;
+    }
+    
+    .score-value {
+        font-size: 1.3em;
+    }
+    
+    .score-moves-label {
+        font-size: 0.65em;
+    }
+}
+
+#info-modal .modal-content {
+    max-width: 600px;
+}
+
+.modal-overlay.active .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.modal-content p {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+#game-over-modal #modal-steps-score-text {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+#game-over-modal #modal-feedback-text {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.modal-feedback {
+    font-size: 0.95em;
+    color: var(--text-dark);
+}
+
+.modal-feedback strong {
+    font-weight: bold;
+}
+
+/* 弹窗按钮样式 */
+#modal-restart-button,
+.modal-action-button,
+#restart-confirm-yes,
+#restart-confirm-no,
+#modal-screenshot-button {
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    background: var(--button-bg);
+    color: var(--text-light);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    padding: 10px 20px;
+    font-size: 1em;
+    font-weight: bold;
+    min-width: 100px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#modal-restart-button:hover,
+.modal-action-button:hover,
+#restart-confirm-yes:hover,
+#restart-confirm-no:hover,
+#modal-screenshot-button:hover {
+    background: var(--button-hover-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+#modal-restart-button:active,
+.modal-action-button:active,
+#restart-confirm-yes:active,
+#restart-confirm-no:active,
+#modal-screenshot-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
+}
+
+#restart-confirm-no {
+    background-color: #776e65;
+}
+
+#restart-confirm-no:hover {
+    background-color: #5e554e;
+}
+
+/* 弹窗关闭按钮 */
+.modal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.8em;
+    font-weight: bold;
+    color: var(--text-dark);
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+    padding: 5px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.modal-close-btn:hover {
+    color: #333;
+    transform: rotate(90deg);
+}
+
+/* 信息弹窗内容样式 */
+#info-modal-content {
+    text-align: left;
+    max-height: 60vh;
+    overflow-y: auto;
+    font-size: 0.9em;
+    line-height: 1.6;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+#info-modal-content strong {
+    font-weight: bold;
+}
+
+#info-modal-content code {
+    background-color: #f0f0f0;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+}
+
+#info-modal-content ol,
+#info-modal-content ul {
+    padding-left: 20px;
+}
+
+#info-modal-content br+br {
+    display: block;
+    margin-bottom: 0.5em;
+}
+
+#info-modal-content .secret-message-container br {
+    margin-bottom: 0;
+}
+
+#info-modal-content a {
+    color: var(--text-dark);
+    text-decoration: underline;
+}
+
+#info-modal-content a:hover {
+    color: var(--button-hover-bg);
+}
+
+/* 存档/读档区域样式 */
+.save-load-section {
+    margin-bottom: 15px;
+}
+
+.save-load-section h3 {
+    font-size: 1.2em;
+    margin-bottom: 8px;
+}
+
+.save-load-section textarea {
+    width: calc(100% - 20px);
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    padding: 8px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    resize: vertical;
+    box-sizing: border-box;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+/* 彩带效果 */
+.confetti-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    border-radius: 50%;
+}
+
+/* 提示通知样式 */
+#toast-notification {
+    position: fixed;
+    left: 50%;
+    top: 25%;
+    transform: translate(-50%, -50%);
+    padding: 15px 25px;
+    border-radius: 8px;
+    z-index: 10000;
+    text-align: center;
+    font-size: 1.1em;
+    font-weight: bold;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+#toast-notification.success {
+    background-color: rgba(0, 0, 0, 0.75);
+    color: var(--text-light);
+}
+
+#toast-notification.error {
+    background-color: rgba(200, 50, 50, 0.85);
+    color: var(--text-light);
+}
+
+#toast-notification.warning {
+    background-color: rgba(230, 160, 0, 0.85);
+    color: #333;
+}
+
+#toast-notification.info_dark {
+    background-color: rgba(20, 20, 20, 0.9);
+    color: white;
+    font-size: 1em;
+    padding: 12px 20px;
+}
+
+#toast-notification.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#toast-notification:not(.visible) {
+    transform: translate(-50%, -70%) scale(0.95);
+}
+
+/* 页脚样式 */
+#footer-credit {
+    text-align: center;
+    padding: 20px 10px;
+    font-size: 0.8em;
+    color: var(--footer-text-color);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#footer-credit a {
+    color: var(--footer-text-color);
+    text-decoration: underline;
+}
+
+#footer-credit a:hover {
+    color: var(--footer-link-hover-color);
+}
+
+/* 游戏结束统计信息样式 */
+.game-end-stats {
+    text-align: center;
+    padding: 10px 15px;
+    margin: 10px 0;
+    background-color: rgba(238, 228, 218, 0.85);
+    border-radius: 6px;
+    font-size: 1.1em;
+    color: var(--text-dark);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.game-end-stats strong {
+    font-weight: bold;
+    color: #776e65;
+}
+
+/* 响应式布局 */
+@media (max-width: 600px) {
+    .game-wrapper {
+        margin: 10px auto;
+        padding: 0 5px;
+        max-width: 100%;
+    }
+    
+    #game-board {
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .modal-content {
+        max-width: calc(100% - 30px);
+        padding: 15px;
+    }
+    
+    .modal-content h2 {
+        font-size: 1.3em;
+    }
+}
+
+@media (max-width: 480px) {
+    #info-modal-content {
+        max-height: 70vh;
+    }
+    
+    .score-box {
+        min-width: 90px;
+    }
+    
+    .score-value {
+        font-size: 1.3em;
+    }
+    
+    .score-moves-label {
+        font-size: 0.65em;
+    }
+}
+
+#info-modal .modal-content {
+    max-width: 600px;
+}
+
+.modal-overlay.active .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.modal-content p {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+#game-over-modal #modal-steps-score-text {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+#game-over-modal #modal-feedback-text {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.modal-feedback {
+    font-size: 0.95em;
+    color: var(--text-dark);
+}
+
+.modal-feedback strong {
+    font-weight: bold;
+}
+
+/* 弹窗按钮样式 */
+#modal-restart-button,
+.modal-action-button,
+#restart-confirm-yes,
+#restart-confirm-no,
+#modal-screenshot-button {
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    background: var(--button-bg);
+    color: var(--text-light);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    padding: 10px 20px;
+    font-size: 1em;
+    font-weight: bold;
+    min-width: 100px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#modal-restart-button:hover,
+.modal-action-button:hover,
+#restart-confirm-yes:hover,
+#restart-confirm-no:hover,
+#modal-screenshot-button:hover {
+    background: var(--button-hover-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+#modal-restart-button:active,
+.modal-action-button:active,
+#restart-confirm-yes:active,
+#restart-confirm-no:active,
+#modal-screenshot-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
+}
+
+#restart-confirm-no {
+    background-color: #776e65;
+}
+
+#restart-confirm-no:hover {
+    background-color: #5e554e;
+}
+
+/* 弹窗关闭按钮 */
+.modal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.8em;
+    font-weight: bold;
+    color: var(--text-dark);
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+    padding: 5px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.modal-close-btn:hover {
+    color: #333;
+    transform: rotate(90deg);
+}
+
+/* 信息弹窗内容样式 */
+#info-modal-content {
+    text-align: left;
+    max-height: 60vh;
+    overflow-y: auto;
+    font-size: 0.9em;
+    line-height: 1.6;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+#info-modal-content strong {
+    font-weight: bold;
+}
+
+#info-modal-content code {
+    background-color: #f0f0f0;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+}
+
+#info-modal-content ol,
+#info-modal-content ul {
+    padding-left: 20px;
+}
+
+#info-modal-content br+br {
+    display: block;
+    margin-bottom: 0.5em;
+}
+
+#info-modal-content .secret-message-container br {
+    margin-bottom: 0;
+}
+
+#info-modal-content a {
+    color: var(--text-dark);
+    text-decoration: underline;
+}
+
+#info-modal-content a:hover {
+    color: var(--button-hover-bg);
+}
+
+/* 存档/读档区域样式 */
+.save-load-section {
+    margin-bottom: 15px;
+}
+
+.save-load-section h3 {
+    font-size: 1.2em;
+    margin-bottom: 8px;
+}
+
+.save-load-section textarea {
+    width: calc(100% - 20px);
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    padding: 8px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    resize: vertical;
+    box-sizing: border-box;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+/* 彩带效果 */
+.confetti-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    border-radius: 50%;
+}
+
+/* 提示通知样式 */
+#toast-notification {
+    position: fixed;
+    left: 50%;
+    top: 25%;
+    transform: translate(-50%, -50%);
+    padding: 15px 25px;
+    border-radius: 8px;
+    z-index: 10000;
+    text-align: center;
+    font-size: 1.1em;
+    font-weight: bold;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+#toast-notification.success {
+    background-color: rgba(0, 0, 0, 0.75);
+    color: var(--text-light);
+}
+
+#toast-notification.error {
+    background-color: rgba(200, 50, 50, 0.85);
+    color: var(--text-light);
+}
+
+#toast-notification.warning {
+    background-color: rgba(230, 160, 0, 0.85);
+    color: #333;
+}
+
+#toast-notification.info_dark {
+    background-color: rgba(20, 20, 20, 0.9);
+    color: white;
+    font-size: 1em;
+    padding: 12px 20px;
+}
+
+#toast-notification.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#toast-notification:not(.visible) {
+    transform: translate(-50%, -70%) scale(0.95);
+}
+
+/* 页脚样式 */
+#footer-credit {
+    text-align: center;
+    padding: 20px 10px;
+    font-size: 0.8em;
+    color: var(--footer-text-color);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#footer-credit a {
+    color: var(--footer-text-color);
+    text-decoration: underline;
+}
+
+#footer-credit a:hover {
+    color: var(--footer-link-hover-color);
+}
+
+/* 游戏结束统计信息样式 */
+.game-end-stats {
+    text-align: center;
+    padding: 10px 15px;
+    margin: 10px 0;
+    background-color: rgba(238, 228, 218, 0.85);
+    border-radius: 6px;
+    font-size: 1.1em;
+    color: var(--text-dark);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.game-end-stats strong {
+    font-weight: bold;
+    color: #776e65;
+}
+
+/* 响应式布局 */
+@media (max-width: 600px) {
+    .game-wrapper {
+        margin: 10px auto;
+        padding: 0 5px;
+        max-width: 100%;
+    }
+    
+    #game-board {
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .modal-content {
+        max-width: calc(100% - 30px);
+        padding: 15px;
+    }
+    
+    .modal-content h2 {
+        font-size: 1.3em;
+    }
+}
+
+@media (max-width: 480px) {
+    #info-modal-content {
+        max-height: 70vh;
+    }
+    
+    .score-box {
+        min-width: 90px;
+    }
+    
+    .score-value {
+        font-size: 1.3em;
+    }
+    
+    .score-moves-label {
+        font-size: 0.65em;
+    }
+}
+
+#info-modal .modal-content {
+    max-width: 600px;
+}
+
+.modal-overlay.active .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.modal-content p {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+#game-over-modal #modal-steps-score-text {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+#game-over-modal #modal-feedback-text {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.modal-feedback {
+    font-size: 0.95em;
+    color: var(--text-dark);
+}
+
+.modal-feedback strong {
+    font-weight: bold;
+}
+
+/* 弹窗按钮样式 */
+#modal-restart-button,
+.modal-action-button,
+#restart-confirm-yes,
+#restart-confirm-no,
+#modal-screenshot-button {
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    background: var(--button-bg);
+    color: var(--text-light);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    padding: 10px 20px;
+    font-size: 1em;
+    font-weight: bold;
+    min-width: 100px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#modal-restart-button:hover,
+.modal-action-button:hover,
+#restart-confirm-yes:hover,
+#restart-confirm-no:hover,
+#modal-screenshot-button:hover {
+    background: var(--button-hover-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+#modal-restart-button:active,
+.modal-action-button:active,
+#restart-confirm-yes:active,
+#restart-confirm-no:active,
+#modal-screenshot-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
+}
+
+#restart-confirm-no {
+    background-color: #776e65;
+}
+
+#restart-confirm-no:hover {
+    background-color: #5e554e;
+}
+
+/* 弹窗关闭按钮 */
+.modal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.8em;
+    font-weight: bold;
+    color: var(--text-dark);
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+    padding: 5px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.modal-close-btn:hover {
+    color: #333;
+    transform: rotate(90deg);
+}
+
+/* 信息弹窗内容样式 */
+#info-modal-content {
+    text-align: left;
+    max-height: 60vh;
+    overflow-y: auto;
+    font-size: 0.9em;
+    line-height: 1.6;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+#info-modal-content strong {
+    font-weight: bold;
+}
+
+#info-modal-content code {
+    background-color: #f0f0f0;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+}
+
+#info-modal-content ol,
+#info-modal-content ul {
+    padding-left: 20px;
+}
+
+#info-modal-content br+br {
+    display: block;
+    margin-bottom: 0.5em;
+}
+
+#info-modal-content .secret-message-container br {
+    margin-bottom: 0;
+}
+
+#info-modal-content a {
+    color: var(--text-dark);
+    text-decoration: underline;
+}
+
+#info-modal-content a:hover {
+    color: var(--button-hover-bg);
+}
+
+/* 存档/读档区域样式 */
+.save-load-section {
+    margin-bottom: 15px;
+}
+
+.save-load-section h3 {
+    font-size: 1.2em;
+    margin-bottom: 8px;
+}
+
+.save-load-section textarea {
+    width: calc(100% - 20px);
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    padding: 8px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    resize: vertical;
+    box-sizing: border-box;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+/* 彩带效果 */
+.confetti-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    border-radius: 50%;
+}
+
+/* 提示通知样式 */
+#toast-notification {
+    position: fixed;
+    left: 50%;
+    top: 25%;
+    transform: translate(-50%, -50%);
+    padding: 15px 25px;
+    border-radius: 8px;
+    z-index: 10000;
+    text-align: center;
+    font-size: 1.1em;
+    font-weight: bold;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+#toast-notification.success {
+    background-color: rgba(0, 0, 0, 0.75);
+    color: var(--text-light);
+}
+
+#toast-notification.error {
+    background-color: rgba(200, 50, 50, 0.85);
+    color: var(--text-light);
+}
+
+#toast-notification.warning {
+    background-color: rgba(230, 160, 0, 0.85);
+    color: #333;
+}
+
+#toast-notification.info_dark {
+    background-color: rgba(20, 20, 20, 0.9);
+    color: white;
+    font-size: 1em;
+    padding: 12px 20px;
+}
+
+#toast-notification.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#toast-notification:not(.visible) {
+    transform: translate(-50%, -70%) scale(0.95);
+}
+
+/* 页脚样式 */
+#footer-credit {
+    text-align: center;
+    padding: 20px 10px;
+    font-size: 0.8em;
+    color: var(--footer-text-color);
+    width: 100%;
+    box-sizing: border-box;
+}

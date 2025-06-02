@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Easy2048</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="game-wrapper">
+        <div class="game-header">
+            <div class="header-title-action-mobile-row">
+                <button id="info-button" class="header-icon-btn" aria-label="游戏介绍">📄</button>
+                <h1 id="game-title-text">2048</h1>
+            </div>
+            <div class="header-scores-container">
+                <div class="score-box">
+                    <span class="score-label">分数</span>
+                    <span id="current-score-value" class="score-value">0</span>
+                    <span class="score-moves-label">步数: <span id="current-moves-value">0</span></span>
+                </div>
+                <div class="score-box">
+                    <span class="score-label">最高分</span>
+                    <span id="best-score-value" class="score-value">0</span>
+                    <span class="score-moves-label">步数: <span id="best-moves-value">0</span></span>
+                </div>
+            </div>
+            <div id="screenshot-stats-display"></div>
+            <button id="save-button" class="header-icon-btn" aria-label="存档" style="display:none;">💾</button>
+            <button id="restart-button" class="header-icon-btn" aria-label="重新开始" style="display:none;">🔄</button>
+        </div>
+
+        <div id="game-board"></div>
+    </div>
+
+    <!-- 游戏结束弹窗 -->
+    <div id="game-over-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn" data-modal-id="game-over-modal" aria-label="关闭">×</button>
+            <h2 id="game-over-title">游戏结束!</h2>
+            <p id="modal-steps-score-text"></p>
+            <p id="modal-feedback-text" class="modal-feedback"></p>
+            <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                <button id="modal-restart-button" class="modal-action-button">再玩一局</button>
+                <button id="modal-screenshot-button" class="modal-action-button">让我先截个图</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏信息弹窗 -->
+    <div id="info-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn" data-modal-id="info-modal" aria-label="关闭">×</button>
+            <h2>关于 Easy2048</h2>
+            <div id="info-modal-content"></div>
+        </div>
+    </div>
+
+    <!-- 存档/读档弹窗 -->
+    <div id="save-load-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn" data-modal-id="save-load-modal" aria-label="关闭">×</button>
+            <h2>存档 / 读档</h2>
+            <div class="save-load-section">
+                <h3>导出存档</h3>
+                <textarea id="export-data-textarea" readonly rows="5" aria-label="导出的存档数据"></textarea>
+                <button id="copy-save-data-button" class="modal-action-button">复制到剪贴板</button>
+            </div>
+            <div class="save-load-section" style="margin-top: 20px;">
+                <h3>导入存档</h3>
+                <textarea id="import-data-textarea" rows="5" placeholder="在此处粘贴存档数据..." aria-label="用于导入的存档数据"></textarea>
+                <button id="import-save-data-button" class="modal-action-button">导入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重置确认弹窗 -->
+    <div id="restart-confirm-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn" data-modal-id="restart-confirm-modal" aria-label="关闭">×</button>
+            <h2>确认重置</h2>
+            <p>你确定要重置游戏吗？<br>当前进度将会丢失。</p>
+            <div style="margin-top: 20px; display: flex; justify-content: space-around; gap: 15px;">
+                <button id="restart-confirm-yes" class="modal-action-button">确认</button>
+                <button id="restart-confirm-no" class="modal-action-button">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="footer-credit">
+        <nav>本游戏由<a href="https://github.com/ThatMrBen"> @本先森Ben（ThatMrBen）</a>基于 HTML5 和 JavaScript 实现开发</nav>
+        <nav>本项目仅供学习和娱乐使用，不作其他用途</nav>
+    </div>
+
+    <!-- 游戏脚本 -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/board.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
