@@ -54,8 +54,10 @@ const CONFIG = {
         
         PROJECT_INFO: `项目名称：2048<br>
 项目全称：Simple2048<br>
-项目版本：test10<br>
+项目版本：1.0.0<br>
 项目作者：<a href="https://github.com/ThatMrBen"> @本先森Ben（ThatMrBen）</a><br>
+项目网址：<a href="https://thatmrben.github.io/Simple2048/">https://thatmrben.github.io/Simple2048/</a><br>
+项目开源地址：<a href="https://github.com/ThatMrBen/Simple2048">https://github.com/ThatMrBen/Simple2048</a><br>
 项目确立时间：北京时间 公元2024年5月25日<br>
 版本更新日期：北京时间 公元2024年6月8日<br>
 本次更新说明：<br>
