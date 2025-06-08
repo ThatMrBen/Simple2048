@@ -65,6 +65,23 @@ class Game {
      * @param {string} direction - 移动方向 ('up', 'down', 'left', 'right')
      */
     handleMove(direction) {
+        // 如果有任何弹窗打开，忽略移动操作
+        if (Utils.isAnyModalActive()) {
+            return;
+        }
+        
+        // 如果游戏结束或者有截图统计显示，忽略移动操作
+        const screenshotStatsDisplay = document.getElementById('screenshot-stats-display');
+        const gameEndStats = document.querySelector('.game-end-stats');
+        if ((screenshotStatsDisplay && screenshotStatsDisplay.classList.contains('visible')) || 
+            gameEndStats) {
+            Utils.showToast('游戏已经结束，请点击重新开始再来一局吧！', 'info_dark', 2000);
+            return;
+        }
+        
+        // 如果当前正在动画中，忽略该操作
+        if (this.ui.isAnimating) return;
+        
         // 设置动画状态
         this.ui.setAnimating(true);
         
@@ -84,17 +101,18 @@ class Game {
                 this.bestMoves
             );
             
-            // 检查游戏是否结束
+            // 立即重置动画状态，允许用户继续操作
+            this.ui.setAnimating(false);
+            
+            // 检查游戏状态
             this.checkGameStatus();
             
             // 保存游戏状态到本地存储
             this.saveGameState();
-        }
-        
-        // 重置动画状态
-        setTimeout(() => {
+        } else {
+            // 如果移动无效，立即重置动画状态
             this.ui.setAnimating(false);
-        }, 250); // 增加动画持续时间，与CSS动画持续时间匹配
+        }
     }
     
     /**

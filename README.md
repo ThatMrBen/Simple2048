@@ -10,7 +10,7 @@
 
 1. 克隆仓库：
    ```bash
-   git clone https://github.com/your-username/Simple2048.git
+   git clone https://github.com/ThatMrBen/Simple2048.git
    ```
 2. 进入项目目录：
    ```bash

@@ -26,6 +26,7 @@ class GameBoard {
         this.movesMade = 0;
         this.gameWon = false;
         this.gameOver = false;
+        this.lastMoveInfo = null; // 存储上一次移动的信息
         
         // 添加初始的两个随机方块
         this.addRandomTile();
@@ -34,6 +35,7 @@ class GameBoard {
     
     /**
      * 添加一个随机方块到棋盘上的空位置
+     * @returns {Object|null} - 新添加的方块信息，如果没有空位则返回null
      */
     addRandomTile() {
         const emptyCells = [];
@@ -51,8 +53,18 @@ class GameBoard {
         if (emptyCells.length > 0) {
             const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
             // 新方块有90%概率是2，10%概率是4
-            this.board[randomCell.r][randomCell.c] = Math.random() < 0.9 ? 2 : 4;
+            const value = Math.random() < 0.9 ? 2 : 4;
+            this.board[randomCell.r][randomCell.c] = value;
+            
+            // 返回新方块信息，供UI动画使用
+            return {
+                type: 'new',
+                position: { r: randomCell.r, c: randomCell.c },
+                value: value
+            };
         }
+        
+        return null;
     }
     
     /**
@@ -98,109 +110,524 @@ class GameBoard {
     }
     
     /**
-     * 滑动并合并一行方块（向左）
-     * @param {number[]} row - 要处理的行
-     * @returns {Object} - 处理后的行和是否发生移动或合并的标志
+     * 向指定方向移动棋盘
+     * @param {string} direction - 移动方向：'up', 'down', 'left', 'right'
+     * @returns {boolean} - 是否发生了移动
      */
-    slideAndMergeRow(row) {
-        // 1. 过滤掉零，压缩方块
-        let newRow = row.filter(val => val !== 0);
-        let movedOrMerged = false;
+    move(direction) {
+        // 复制当前棋盘状态以便比较
+        const oldBoard = this.board.map(row => [...row]);
         
-        // 2. 合并相邻的相同方块
-        for (let i = 0; i < newRow.length - 1; i++) {
-            if (newRow[i] === newRow[i+1]) {
-                newRow[i] *= 2; // 合并：值翻倍
-                this.score += newRow[i]; // 将合并值加到分数
-                newRow.splice(i + 1, 1); // 移除被合并的方块
-                movedOrMerged = true;
-            }
+        // 准备记录移动信息
+        this.lastMoveInfo = {
+            direction,
+            movements: [],
+            merges: [],
+            newTile: null
+        };
+        
+        let moved = false;
+        
+        switch (direction) {
+            case 'up':
+                moved = this.moveUp();
+                break;
+            case 'down':
+                moved = this.moveDown();
+                break;
+            case 'left':
+                moved = this.moveLeft();
+                break;
+            case 'right':
+                moved = this.moveRight();
+                break;
         }
         
-        // 3. 用零填充以保持行大小
-        while (newRow.length < this.size) newRow.push(0);
+        // 验证所有移动和合并数据是否有效
+        this.validateMoveInfo();
         
-        // 4. 检查是否有方块实际移动（即使没有合并）
-        if (!movedOrMerged) {
-            for (let i = 0; i < this.size; ++i) {
-                if (row[i] !== newRow[i]) {
-                    movedOrMerged = true;
-                    break;
+        // 如果发生了移动，添加一个新的数字块
+        if (moved) {
+            const newTile = this.addRandomTile();
+            if (newTile) {
+                this.lastMoveInfo.newTile = newTile;
+            }
+            
+            // 记录移动步数
+            this.movesMade++;
+        } else {
+            this.lastMoveInfo = null;
+        }
+        
+        return moved;
+    }
+    
+    /**
+     * 验证移动信息数据是否有效
+     * 删除任何包含undefined或NaN值的移动或合并记录
+     */
+    validateMoveInfo() {
+        if (!this.lastMoveInfo) return;
+        
+        // 验证移动数据
+        if (Array.isArray(this.lastMoveInfo.movements)) {
+            this.lastMoveInfo.movements = this.lastMoveInfo.movements.filter(movement => {
+                return movement 
+                    && typeof movement === 'object'
+                    && movement.from && movement.to
+                    && typeof movement.from === 'object' && typeof movement.to === 'object'
+                    && movement.from.r !== undefined && movement.from.c !== undefined
+                    && movement.to.r !== undefined && movement.to.c !== undefined
+                    && movement.value !== undefined && !isNaN(movement.value);
+            });
+        }
+        
+        // 验证合并数据
+        if (Array.isArray(this.lastMoveInfo.merges)) {
+            this.lastMoveInfo.merges = this.lastMoveInfo.merges.filter(merge => {
+                return merge 
+                    && typeof merge === 'object'
+                    && merge.active && merge.passive && merge.finalPosition
+                    && typeof merge.active === 'object' && typeof merge.passive === 'object'
+                    && typeof merge.finalPosition === 'object'
+                    && merge.active.from && merge.active.to
+                    && merge.passive.from && merge.passive.to
+                    && merge.value !== undefined && !isNaN(merge.value);
+            });
+        }
+        
+        // 验证新方块数据
+        if (this.lastMoveInfo.newTile) {
+            const newTile = this.lastMoveInfo.newTile;
+            if (!newTile.position || !newTile.value || isNaN(newTile.value)) {
+                this.lastMoveInfo.newTile = null;
+            }
+        }
+    }
+    
+    /**
+     * 向上移动棋盘
+     * @returns {boolean} - 是否发生了移动
+     */
+    moveUp() {
+        let moved = false;
+        const size = this.board.length;
+        
+        // 遍历每一列
+        for (let c = 0; c < size; c++) {
+            // 压缩并收集非零元素
+            const tiles = [];
+            for (let r = 0; r < size; r++) {
+                if (this.board[r][c] !== 0) {
+                    tiles.push({
+                        value: this.board[r][c],
+                        originalRow: r,
+                        originalCol: c
+                    });
+                }
+            }
+            
+            // 如果此列没有非零元素，跳过
+            if (tiles.length === 0) continue;
+            
+            // 合并相同值的相邻方块
+            const mergedTiles = [];
+            let destRow = 0;
+            
+            let i = 0;
+            while (i < tiles.length) {
+                const current = tiles[i];
+                
+                // 检查是否可以与下一个方块合并
+                if (i + 1 < tiles.length && current.value === tiles[i + 1].value) {
+                    const next = tiles[i + 1];
+                    const mergedValue = current.value * 2;
+                    
+                    // 记录合并信息
+                    this.lastMoveInfo.merges.push({
+                        active: {
+                            from: { r: next.originalRow, c },
+                            to: { r: destRow, c }
+                        },
+                        passive: {
+                            from: { r: current.originalRow, c },
+                            to: { r: destRow, c }
+                        },
+                        value: mergedValue,
+                        finalPosition: { r: destRow, c }
+                    });
+                    
+                    // 添加合并后的方块
+                    mergedTiles.push({
+                        value: mergedValue,
+                        row: destRow
+                    });
+                    
+                    // 增加得分
+                    this.score += mergedValue;
+                    
+                    // 跳过下一个方块，因为已经合并了
+                    i += 2;
+                } else {
+                    // 如果不能合并，则只是移动
+                    if (current.originalRow !== destRow) {
+                        this.lastMoveInfo.movements.push({
+                            from: { r: current.originalRow, c },
+                            to: { r: destRow, c },
+                            value: current.value
+                        });
+                    }
+                    
+                    // 添加到新位置
+                    mergedTiles.push({
+                        value: current.value,
+                        row: destRow
+                    });
+                    
+                    i++;
+                }
+                
+                // 移动到下一个位置
+                destRow++;
+            }
+            
+            // 更新棋盘
+            for (let r = 0; r < size; r++) {
+                const newValue = r < mergedTiles.length ? mergedTiles[r].value : 0;
+                if (this.board[r][c] !== newValue) {
+                    moved = true;
+                    this.board[r][c] = newValue;
                 }
             }
         }
         
-        return { newRow, movedOrMergedInRow: movedOrMerged };
+        return moved;
     }
     
     /**
-     * 旋转棋盘90度（顺时针）
-     * @param {number[][]} currentBoard - 要旋转的棋盘
-     * @returns {number[][]} - 旋转后的棋盘
+     * 向下移动棋盘
+     * @returns {boolean} - 是否发生了移动
      */
-    rotateBoard(currentBoard) {
-        const newBoard = Array.from({ length: this.size }, () => Array(this.size).fill(0));
-        for (let r = 0; r < this.size; r++) {
-            for (let c = 0; c < this.size; c++) {
-                newBoard[c][this.size - 1 - r] = currentBoard[r][c];
+    moveDown() {
+        let moved = false;
+        const size = this.board.length;
+        
+        // 遍历每一列
+        for (let c = 0; c < size; c++) {
+            // 压缩并收集非零元素（从底部开始）
+            const tiles = [];
+            for (let r = size - 1; r >= 0; r--) {
+                if (this.board[r][c] !== 0) {
+                    tiles.push({
+                        value: this.board[r][c],
+                        originalRow: r,
+                        originalCol: c
+                    });
+                }
+            }
+            
+            // 如果此列没有非零元素，跳过
+            if (tiles.length === 0) continue;
+            
+            // 合并相同值的相邻方块
+            const mergedTiles = [];
+            let destRow = size - 1;
+            
+            let i = 0;
+            while (i < tiles.length) {
+                const current = tiles[i];
+                
+                // 检查是否可以与下一个方块合并
+                if (i + 1 < tiles.length && current.value === tiles[i + 1].value) {
+                    const next = tiles[i + 1];
+                    const mergedValue = current.value * 2;
+                    
+                    // 记录合并信息
+                    this.lastMoveInfo.merges.push({
+                        active: {
+                            from: { r: next.originalRow, c },
+                            to: { r: destRow, c }
+                        },
+                        passive: {
+                            from: { r: current.originalRow, c },
+                            to: { r: destRow, c }
+                        },
+                        value: mergedValue,
+                        finalPosition: { r: destRow, c }
+                    });
+                    
+                    // 添加合并后的方块
+                    mergedTiles.push({
+                        value: mergedValue,
+                        row: destRow
+                    });
+                    
+                    // 增加得分
+                    this.score += mergedValue;
+                    
+                    // 跳过下一个方块，因为已经合并了
+                    i += 2;
+                } else {
+                    // 如果不能合并，则只是移动
+                    if (current.originalRow !== destRow) {
+                        this.lastMoveInfo.movements.push({
+                            from: { r: current.originalRow, c },
+                            to: { r: destRow, c },
+                            value: current.value
+                        });
+                    }
+                    
+                    // 添加到新位置
+                    mergedTiles.push({
+                        value: current.value,
+                        row: destRow
+                    });
+                    
+                    i++;
+                }
+                
+                // 移动到下一个位置（向上移动）
+                destRow--;
+            }
+            
+            // 更新棋盘
+            for (let r = 0; r < size; r++) {
+                let newValue = 0;
+                for (const tile of mergedTiles) {
+                    if (tile.row === r) {
+                        newValue = tile.value;
+                        break;
+                    }
+                }
+                
+                if (this.board[r][c] !== newValue) {
+                    moved = true;
+                    this.board[r][c] = newValue;
+                }
             }
         }
-        return newBoard;
+        
+        return moved;
     }
     
     /**
-     * 执行移动操作
-     * @param {string} direction - 移动方向：'up', 'down', 'left', 'right'
-     * @returns {boolean} - 如果移动有效（棋盘发生变化）返回true
+     * 向左移动棋盘
+     * @returns {boolean} - 是否发生了移动
      */
-    move(direction) {
-        if (this.gameOver) return false;
+    moveLeft() {
+        let moved = false;
+        const size = this.board.length;
         
-        let boardChanged = false;
-        let tempBoard = JSON.parse(JSON.stringify(this.board)); // 深拷贝棋盘
-        
-        // 旋转棋盘，使所有方向的移动都可以作为"向左"移动处理
-        if (direction === 'up') {
-            tempBoard = this.rotateBoard(this.rotateBoard(this.rotateBoard(tempBoard))); // 旋转3次
-        } else if (direction === 'right') {
-            tempBoard = this.rotateBoard(this.rotateBoard(tempBoard)); // 旋转2次
-        } else if (direction === 'down') {
-            tempBoard = this.rotateBoard(tempBoard); // 旋转1次
-        }
-        // 'left'不需要旋转
-        
-        // 处理每一行
-        for (let r = 0; r < this.size; r++) {
-            const { newRow, movedOrMergedInRow } = this.slideAndMergeRow(tempBoard[r]);
-            tempBoard[r] = newRow;
-            if (movedOrMergedInRow) boardChanged = true;
-        }
-        
-        // 将棋盘旋转回原来的方向
-        if (direction === 'up') {
-            tempBoard = this.rotateBoard(tempBoard);
-        } else if (direction === 'right') {
-            tempBoard = this.rotateBoard(this.rotateBoard(tempBoard));
-        } else if (direction === 'down') {
-            tempBoard = this.rotateBoard(this.rotateBoard(this.rotateBoard(tempBoard)));
-        }
-        
-        // 如果棋盘发生变化，更新状态
-        if (boardChanged) {
-            this.board = tempBoard;
-            this.addRandomTile(); // 添加一个新的随机方块
-            this.movesMade++; // 增加移动计数
+        // 遍历每一行
+        for (let r = 0; r < size; r++) {
+            // 压缩并收集非零元素
+            const tiles = [];
+            for (let c = 0; c < size; c++) {
+                if (this.board[r][c] !== 0) {
+                    tiles.push({
+                        value: this.board[r][c],
+                        originalRow: r,
+                        originalCol: c
+                    });
+                }
+            }
             
-            // 检查是否达到获胜条件
-            this.hasWon();
+            // 如果此行没有非零元素，跳过
+            if (tiles.length === 0) continue;
             
-            // 检查游戏是否结束
-            this.isGameOver();
+            // 合并相同值的相邻方块
+            const mergedTiles = [];
+            let destCol = 0;
             
-            return true;
+            let i = 0;
+            while (i < tiles.length) {
+                const current = tiles[i];
+                
+                // 检查是否可以与下一个方块合并
+                if (i + 1 < tiles.length && current.value === tiles[i + 1].value) {
+                    const next = tiles[i + 1];
+                    const mergedValue = current.value * 2;
+                    
+                    // 记录合并信息
+                    this.lastMoveInfo.merges.push({
+                        active: {
+                            from: { r, c: next.originalCol },
+                            to: { r, c: destCol }
+                        },
+                        passive: {
+                            from: { r, c: current.originalCol },
+                            to: { r, c: destCol }
+                        },
+                        value: mergedValue,
+                        finalPosition: { r, c: destCol }
+                    });
+                    
+                    // 添加合并后的方块
+                    mergedTiles.push({
+                        value: mergedValue,
+                        col: destCol
+                    });
+                    
+                    // 增加得分
+                    this.score += mergedValue;
+                    
+                    // 跳过下一个方块，因为已经合并了
+                    i += 2;
+                } else {
+                    // 如果不能合并，则只是移动
+                    if (current.originalCol !== destCol) {
+                        this.lastMoveInfo.movements.push({
+                            from: { r, c: current.originalCol },
+                            to: { r, c: destCol },
+                            value: current.value
+                        });
+                    }
+                    
+                    // 添加到新位置
+                    mergedTiles.push({
+                        value: current.value,
+                        col: destCol
+                    });
+                    
+                    i++;
+                }
+                
+                // 移动到下一个位置
+                destCol++;
+            }
+            
+            // 更新棋盘
+            for (let c = 0; c < size; c++) {
+                let newValue = 0;
+                for (const tile of mergedTiles) {
+                    if (tile.col === c) {
+                        newValue = tile.value;
+                        break;
+                    }
+                }
+                
+                if (this.board[r][c] !== newValue) {
+                    moved = true;
+                    this.board[r][c] = newValue;
+                }
+            }
         }
         
-        return false;
+        return moved;
+    }
+    
+    /**
+     * 向右移动棋盘
+     * @returns {boolean} - 是否发生了移动
+     */
+    moveRight() {
+        let moved = false;
+        const size = this.board.length;
+        
+        // 遍历每一行
+        for (let r = 0; r < size; r++) {
+            // 压缩并收集非零元素（从右边开始）
+            const tiles = [];
+            for (let c = size - 1; c >= 0; c--) {
+                if (this.board[r][c] !== 0) {
+                    tiles.push({
+                        value: this.board[r][c],
+                        originalRow: r,
+                        originalCol: c
+                    });
+                }
+            }
+            
+            // 如果此行没有非零元素，跳过
+            if (tiles.length === 0) continue;
+            
+            // 合并相同值的相邻方块
+            const mergedTiles = [];
+            let destCol = size - 1;
+            
+            let i = 0;
+            while (i < tiles.length) {
+                const current = tiles[i];
+                
+                // 检查是否可以与下一个方块合并
+                if (i + 1 < tiles.length && current.value === tiles[i + 1].value) {
+                    const next = tiles[i + 1];
+                    const mergedValue = current.value * 2;
+                    
+                    // 记录合并信息
+                    this.lastMoveInfo.merges.push({
+                        active: {
+                            from: { r, c: next.originalCol },
+                            to: { r, c: destCol }
+                        },
+                        passive: {
+                            from: { r, c: current.originalCol },
+                            to: { r, c: destCol }
+                        },
+                        value: mergedValue,
+                        finalPosition: { r, c: destCol }
+                    });
+                    
+                    // 添加合并后的方块
+                    mergedTiles.push({
+                        value: mergedValue,
+                        col: destCol
+                    });
+                    
+                    // 增加得分
+                    this.score += mergedValue;
+                    
+                    // 跳过下一个方块，因为已经合并了
+                    i += 2;
+                } else {
+                    // 如果不能合并，则只是移动
+                    if (current.originalCol !== destCol) {
+                        this.lastMoveInfo.movements.push({
+                            from: { r, c: current.originalCol },
+                            to: { r, c: destCol },
+                            value: current.value
+                        });
+                    }
+                    
+                    // 添加到新位置
+                    mergedTiles.push({
+                        value: current.value,
+                        col: destCol
+                    });
+                    
+                    i++;
+                }
+                
+                // 移动到下一个位置（向左移动）
+                destCol--;
+            }
+            
+            // 更新棋盘
+            for (let c = 0; c < size; c++) {
+                let newValue = 0;
+                for (const tile of mergedTiles) {
+                    if (tile.col === c) {
+                        newValue = tile.value;
+                        break;
+                    }
+                }
+                
+                if (this.board[r][c] !== newValue) {
+                    moved = true;
+                    this.board[r][c] = newValue;
+                }
+            }
+        }
+        
+        return moved;
+    }
+    
+    /**
+     * 获取上一次移动的信息
+     * @returns {Object|null} - 上一次移动的信息
+     */
+    getLastMoveInfo() {
+        return this.lastMoveInfo;
     }
     
     /**
@@ -238,6 +665,7 @@ class GameBoard {
         this.score = score;
         this.movesMade = movesMade;
         this.gameOver = false; // 重置游戏结束状态
+        this.lastMoveInfo = null; // 重置移动信息
         
         // 检查是否已经达到获胜条件
         this.hasWon();

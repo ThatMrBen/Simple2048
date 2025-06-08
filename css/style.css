@@ -16,7 +16,7 @@ body {
     font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
     background: var(--game-bg);
     margin: 0;
-    padding: 0 10px;
+    padding: 0;
     color: var(--text-dark);
     overflow-x: hidden;
     display: flex;
@@ -24,14 +24,18 @@ body {
     align-items: center;
     min-height: 100vh;
     -webkit-tap-highlight-color: transparent;
+    font-size: calc(14px + 0.3vw); /* 基础字体大小自适应 */
 }
 
 .game-wrapper {
     width: 100%;
-    max-width: 500px;
-    margin: 20px auto;
-    padding: 0 10px;
+    max-width: min(500px, 90vw);
+    margin: 10px auto;
+    padding: 0;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 /* 头部样式 */
@@ -60,7 +64,7 @@ body {
 #game-title-text {
     grid-column: 2;
     margin: 0;
-    font-size: 2.2em;
+    font-size: clamp(1.8em, 5vw, 2.2em); /* 自适应标题大小 */
     color: var(--text-dark);
     font-weight: 900;
     text-align: center;
@@ -169,20 +173,19 @@ body {
 #game-board {
     background: var(--board-bg);
     border-radius: 6px;
-    padding: 10px;
-    width: 100%;
-    max-width: 330px;
-    min-width: 250px;
-    aspect-ratio: 1 / 1;
+    padding: clamp(5px, 1.5vw, 10px);
+    width: min(90vw, 450px);
+    height: min(90vw, 450px);
     box-sizing: border-box;
     margin: 0 auto;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(4, 1fr);
-    gap: 10px;
+    gap: clamp(4px, 1.2vw, 10px);
     touch-action: none;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative; /* 为绝对定位的动画元素提供定位上下文 */
 }
 
 #game-board:active {
@@ -193,18 +196,34 @@ body {
 .cell {
     background: var(--cell-bg);
     border-radius: 3px;
-    font-size: clamp(1.2em, 5vmin, 2em);
+    font-size: clamp(0.9em, 3.5vw, 2em); /* 自适应单元格字体大小 */
     font-weight: bold;
     color: var(--text-dark);
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
     user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    transition: background 0.2s ease-out, color 0.2s ease-out, transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: background-color 0.1s ease;
+    will-change: transform; /* 优化动画性能 */
+}
+
+/* 空单元格样式 */
+.cell-empty {
+    background: var(--cell-bg);
+    z-index: 1;
+    position: relative;
+}
+
+/* 数字单元格样式 */
+.cell-number {
+    z-index: 2;
+    border-radius: 3px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: absolute;
+    transition: top 0.16s ease, left 0.16s ease, transform 0.16s ease;
 }
 
 /* 不同数值单元格的颜色 */
@@ -222,14 +241,56 @@ body {
 .cell-4096 { background: #3c3a32; color: var(--text-light); }
 .cell-8192 { background: #3c3a32; color: var(--text-light); }
 
-/* 合并动画 */
-.cell-merged { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+/* 滑动动画 */
+.cell-sliding {
+    animation: slide 0.2s ease;
+    z-index: 2;
+}
 
-@keyframes pop {
+@keyframes slide {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes moveToMerge {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+}
+
+/* 合并动画相关样式 */
+.cell-merging-active {
+    z-index: 3;
+    animation: moveToMerge 0.25s ease forwards;
+}
+
+.cell-merging-passive {
+    z-index: 5;
+    animation: receiveMerge 0.25s ease-out;
+}
+
+@keyframes receiveMerge {
     0% { transform: scale(1); }
     50% { transform: scale(1.2); }
-    65% { transform: scale(0.95); }
-    80% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* 新出现的方块动画 */
+.cell-new { 
+    animation: appear 0.25s ease-out;
+}
+
+@keyframes appear {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.1); }
     100% { transform: scale(1); }
 }
 
@@ -548,14 +609,15 @@ body {
 /* 响应式布局 */
 @media (max-width: 600px) {
     .game-wrapper {
-        margin: 10px auto;
-        padding: 0 5px;
-        max-width: 100%;
+        margin: 5px auto;
+        max-width: 95vw;
     }
     
     #game-board {
-        padding: 8px;
-        gap: 8px;
+        padding: clamp(4px, 1.2vw, 6px);
+        gap: clamp(3px, 1vw, 6px);
+        width: min(95vw, 400px);
+        height: min(95vw, 400px);
     }
     
     .modal-content {
@@ -566,1854 +628,118 @@ body {
     .modal-content h2 {
         font-size: 1.3em;
     }
-}
 
-@media (max-width: 480px) {
-    #info-modal-content {
-        max-height: 70vh;
+    .cell {
+        font-size: clamp(1.3em, 6vw, 2.2em);
+        font-weight: 800;
+    }
+    
+    .header-scores-container {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
     }
     
     .score-box {
-        min-width: 90px;
+        min-width: 80px;
+        padding: 4px 6px;
     }
     
-    .score-value {
-        font-size: 1.3em;
-    }
-    
-    .score-moves-label {
-        font-size: 0.65em;
+    .header-icon-btn {
+        font-size: 2.2em;
+        padding: 0 8px;
     }
 }
 
-/* 新数字块生成动画 */
-.cell-new { animation: appear 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); }
-
-@keyframes appear {
-    0% { transform: scale(0); opacity: 0; }
-    60% { transform: scale(1.03); opacity: 1; }
-    80% { transform: scale(0.99); }
-    100% { transform: scale(1); }
-}
-
-#info-modal .modal-content {
-    max-width: 600px;
-}
-
-.modal-overlay.active .modal-content {
-    transform: scale(1);
-}
-
-.modal-content h2 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.5em;
-    font-weight: bold;
-}
-
-.modal-content p {
-    font-size: 1.1em;
-    margin-bottom: 10px;
-    line-height: 1.5;
-}
-
-#game-over-modal #modal-steps-score-text {
-    font-size: 1.1em;
-    margin-bottom: 15px;
-    line-height: 1.5;
-}
-
-#game-over-modal #modal-feedback-text {
-    margin-top: 0;
-    margin-bottom: 20px;
-}
-
-.modal-feedback {
-    font-size: 0.95em;
-    color: var(--text-dark);
-}
-
-.modal-feedback strong {
-    font-weight: bold;
-}
-
-/* 弹窗按钮样式 */
-#modal-restart-button,
-.modal-action-button,
-#restart-confirm-yes,
-#restart-confirm-no,
-#modal-screenshot-button {
-    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
-    background: var(--button-bg);
-    color: var(--text-light);
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    padding: 10px 20px;
-    font-size: 1em;
-    font-weight: bold;
-    min-width: 100px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-#modal-restart-button:hover,
-.modal-action-button:hover,
-#restart-confirm-yes:hover,
-#restart-confirm-no:hover,
-#modal-screenshot-button:hover {
-    background: var(--button-hover-bg);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-}
-
-#modal-restart-button:active,
-.modal-action-button:active,
-#restart-confirm-yes:active,
-#restart-confirm-no:active,
-#modal-screenshot-button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
-}
-
-#restart-confirm-no {
-    background-color: #776e65;
-}
-
-#restart-confirm-no:hover {
-    background-color: #5e554e;
-}
-
-/* 弹窗关闭按钮 */
-.modal-close-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 1.8em;
-    font-weight: bold;
-    color: var(--text-dark);
-    background: none;
-    border: none;
-    cursor: pointer;
-    line-height: 1;
-    padding: 5px;
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
-}
-
-.modal-close-btn:hover {
-    color: #333;
-    transform: rotate(90deg);
-}
-
-/* 信息弹窗内容样式 */
-#info-modal-content {
-    text-align: left;
-    max-height: 60vh;
-    overflow-y: auto;
-    font-size: 0.9em;
-    line-height: 1.6;
-    user-select: text;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-}
-
-#info-modal-content strong {
-    font-weight: bold;
-}
-
-#info-modal-content code {
-    background-color: #f0f0f0;
-    padding: 0.2em 0.4em;
-    border-radius: 3px;
-}
-
-#info-modal-content ol,
-#info-modal-content ul {
-    padding-left: 20px;
-}
-
-#info-modal-content br+br {
-    display: block;
-    margin-bottom: 0.5em;
-}
-
-#info-modal-content .secret-message-container br {
-    margin-bottom: 0;
-}
-
-#info-modal-content a {
-    color: var(--text-dark);
-    text-decoration: underline;
-}
-
-#info-modal-content a:hover {
-    color: var(--button-hover-bg);
-}
-
-/* 存档/读档区域样式 */
-.save-load-section {
-    margin-bottom: 15px;
-}
-
-.save-load-section h3 {
-    font-size: 1.2em;
-    margin-bottom: 8px;
-}
-
-.save-load-section textarea {
-    width: calc(100% - 20px);
-    margin-bottom: 10px;
-    font-size: 0.9em;
-    padding: 8px;
-    border-radius: 3px;
-    border: 1px solid #ccc;
-    resize: vertical;
-    box-sizing: border-box;
-    user-select: text;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-}
-
-/* 彩带效果 */
-.confetti-particle {
-    position: fixed;
-    pointer-events: none;
-    z-index: 9999;
-    border-radius: 50%;
-}
-
-/* 提示通知样式 */
-#toast-notification {
-    position: fixed;
-    left: 50%;
-    top: 25%;
-    transform: translate(-50%, -50%);
-    padding: 15px 25px;
-    border-radius: 8px;
-    z-index: 10000;
-    text-align: center;
-    font-size: 1.1em;
-    font-weight: bold;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-#toast-notification.success {
-    background-color: rgba(0, 0, 0, 0.75);
-    color: var(--text-light);
-}
-
-#toast-notification.error {
-    background-color: rgba(200, 50, 50, 0.85);
-    color: var(--text-light);
-}
-
-#toast-notification.warning {
-    background-color: rgba(230, 160, 0, 0.85);
-    color: #333;
-}
-
-#toast-notification.info_dark {
-    background-color: rgba(20, 20, 20, 0.9);
-    color: white;
-    font-size: 1em;
-    padding: 12px 20px;
-}
-
-#toast-notification.visible {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-}
-
-#toast-notification:not(.visible) {
-    transform: translate(-50%, -70%) scale(0.95);
-}
-
-/* 页脚样式 */
-#footer-credit {
-    text-align: center;
-    padding: 20px 10px;
-    font-size: 0.8em;
-    color: var(--footer-text-color);
-    width: 100%;
-    box-sizing: border-box;
-}
-
-#footer-credit a {
-    color: var(--footer-text-color);
-    text-decoration: underline;
-}
-
-#footer-credit a:hover {
-    color: var(--footer-link-hover-color);
-}
-
-/* 游戏结束统计信息样式 */
-.game-end-stats {
-    text-align: center;
-    padding: 10px 15px;
-    margin: 10px 0;
-    background-color: rgba(238, 228, 218, 0.85);
-    border-radius: 6px;
-    font-size: 1.1em;
-    color: var(--text-dark);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.game-end-stats strong {
-    font-weight: bold;
-    color: #776e65;
-}
-
-/* 响应式布局 */
-@media (max-width: 600px) {
+@media (max-height: 820px) and (max-width: 600px) {
     .game-wrapper {
-        margin: 10px auto;
-        padding: 0 5px;
-        max-width: 100%;
+        margin: 2px auto;
+    }
+    
+    #game-title-text {
+        font-size: clamp(1.8em, 5vw, 2.2em);
+    }
+    
+    .header-scores-container {
+        margin-bottom: 5px;
     }
     
     #game-board {
-        padding: 8px;
-        gap: 8px;
+        width: min(90vw, 380px);
+        height: min(90vw, 380px);
     }
     
-    .modal-content {
-        max-width: calc(100% - 30px);
-        padding: 15px;
+    #footer-credit {
+        padding: 10px 5px;
+        font-size: 0.7em;
     }
     
-    .modal-content h2 {
-        font-size: 1.3em;
+    .score-value {
+        font-size: clamp(1.2em, 4vw, 1.5em);
+    }
+    
+    .score-moves-label {
+        font-size: clamp(0.7em, 2vw, 0.8em);
+    }
+    
+    .cell {
+        font-size: clamp(1.2em, 5.5vw, 2em);
     }
 }
 
 @media (max-width: 480px) {
+    body {
+        font-size: calc(14px + 0.4vw);
+        padding: 0 5px;
+    }
+    
     #info-modal-content {
         max-height: 70vh;
     }
     
     .score-box {
-        min-width: 90px;
+        min-width: 85px;
     }
     
     .score-value {
-        font-size: 1.3em;
+        font-size: clamp(1.2em, 4vw, 1.4em);
     }
     
     .score-moves-label {
-        font-size: 0.65em;
+        font-size: clamp(0.65em, 2vw, 0.75em);
     }
-}
-
-#info-modal .modal-content {
-    max-width: 600px;
-}
-
-.modal-overlay.active .modal-content {
-    transform: scale(1);
-}
-
-.modal-content h2 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.5em;
-    font-weight: bold;
-}
-
-.modal-content p {
-    font-size: 1.1em;
-    margin-bottom: 10px;
-    line-height: 1.5;
-}
-
-#game-over-modal #modal-steps-score-text {
-    font-size: 1.1em;
-    margin-bottom: 15px;
-    line-height: 1.5;
-}
-
-#game-over-modal #modal-feedback-text {
-    margin-top: 0;
-    margin-bottom: 20px;
-}
-
-.modal-feedback {
-    font-size: 0.95em;
-    color: var(--text-dark);
-}
-
-.modal-feedback strong {
-    font-weight: bold;
-}
-
-/* 弹窗按钮样式 */
-#modal-restart-button,
-.modal-action-button,
-#restart-confirm-yes,
-#restart-confirm-no,
-#modal-screenshot-button {
-    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
-    background: var(--button-bg);
-    color: var(--text-light);
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    padding: 10px 20px;
-    font-size: 1em;
-    font-weight: bold;
-    min-width: 100px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-#modal-restart-button:hover,
-.modal-action-button:hover,
-#restart-confirm-yes:hover,
-#restart-confirm-no:hover,
-#modal-screenshot-button:hover {
-    background: var(--button-hover-bg);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-}
-
-#modal-restart-button:active,
-.modal-action-button:active,
-#restart-confirm-yes:active,
-#restart-confirm-no:active,
-#modal-screenshot-button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
-}
-
-#restart-confirm-no {
-    background-color: #776e65;
-}
-
-#restart-confirm-no:hover {
-    background-color: #5e554e;
-}
-
-/* 弹窗关闭按钮 */
-.modal-close-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 1.8em;
-    font-weight: bold;
-    color: var(--text-dark);
-    background: none;
-    border: none;
-    cursor: pointer;
-    line-height: 1;
-    padding: 5px;
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
-}
-
-.modal-close-btn:hover {
-    color: #333;
-    transform: rotate(90deg);
-}
-
-/* 信息弹窗内容样式 */
-#info-modal-content {
-    text-align: left;
-    max-height: 60vh;
-    overflow-y: auto;
-    font-size: 0.9em;
-    line-height: 1.6;
-    user-select: text;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-}
-
-#info-modal-content strong {
-    font-weight: bold;
-}
-
-#info-modal-content code {
-    background-color: #f0f0f0;
-    padding: 0.2em 0.4em;
-    border-radius: 3px;
-}
-
-#info-modal-content ol,
-#info-modal-content ul {
-    padding-left: 20px;
-}
-
-#info-modal-content br+br {
-    display: block;
-    margin-bottom: 0.5em;
-}
-
-#info-modal-content .secret-message-container br {
-    margin-bottom: 0;
-}
-
-#info-modal-content a {
-    color: var(--text-dark);
-    text-decoration: underline;
-}
-
-#info-modal-content a:hover {
-    color: var(--button-hover-bg);
-}
-
-/* 存档/读档区域样式 */
-.save-load-section {
-    margin-bottom: 15px;
-}
-
-.save-load-section h3 {
-    font-size: 1.2em;
-    margin-bottom: 8px;
-}
-
-.save-load-section textarea {
-    width: calc(100% - 20px);
-    margin-bottom: 10px;
-    font-size: 0.9em;
-    padding: 8px;
-    border-radius: 3px;
-    border: 1px solid #ccc;
-    resize: vertical;
-    box-sizing: border-box;
-    user-select: text;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-}
-
-/* 彩带效果 */
-.confetti-particle {
-    position: fixed;
-    pointer-events: none;
-    z-index: 9999;
-    border-radius: 50%;
-}
-
-/* 提示通知样式 */
-#toast-notification {
-    position: fixed;
-    left: 50%;
-    top: 25%;
-    transform: translate(-50%, -50%);
-    padding: 15px 25px;
-    border-radius: 8px;
-    z-index: 10000;
-    text-align: center;
-    font-size: 1.1em;
-    font-weight: bold;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-#toast-notification.success {
-    background-color: rgba(0, 0, 0, 0.75);
-    color: var(--text-light);
-}
-
-#toast-notification.error {
-    background-color: rgba(200, 50, 50, 0.85);
-    color: var(--text-light);
-}
-
-#toast-notification.warning {
-    background-color: rgba(230, 160, 0, 0.85);
-    color: #333;
-}
-
-#toast-notification.info_dark {
-    background-color: rgba(20, 20, 20, 0.9);
-    color: white;
-    font-size: 1em;
-    padding: 12px 20px;
-}
-
-#toast-notification.visible {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-}
-
-#toast-notification:not(.visible) {
-    transform: translate(-50%, -70%) scale(0.95);
-}
-
-/* 页脚样式 */
-#footer-credit {
-    text-align: center;
-    padding: 20px 10px;
-    font-size: 0.8em;
-    color: var(--footer-text-color);
-    width: 100%;
-    box-sizing: border-box;
-}
-
-#footer-credit a {
-    color: var(--footer-text-color);
-    text-decoration: underline;
-}
-
-#footer-credit a:hover {
-    color: var(--footer-link-hover-color);
-}
-
-/* 游戏结束统计信息样式 */
-.game-end-stats {
-    text-align: center;
-    padding: 10px 15px;
-    margin: 10px 0;
-    background-color: rgba(238, 228, 218, 0.85);
-    border-radius: 6px;
-    font-size: 1.1em;
-    color: var(--text-dark);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.game-end-stats strong {
-    font-weight: bold;
-    color: #776e65;
-}
-
-/* 响应式布局 */
-@media (max-width: 600px) {
-    .game-wrapper {
-        margin: 10px auto;
+    
+    .header-icon-btn {
+        font-size: 2em;
         padding: 0 5px;
-        max-width: 100%;
     }
     
-    #game-board {
-        padding: 8px;
-        gap: 8px;
+    .modal-content p {
+        font-size: 1.2em;
     }
     
-    .modal-content {
-        max-width: calc(100% - 30px);
-        padding: 15px;
+    .modal-action-button {
+        font-size: 1.15em;
+        padding: 12px 20px;
     }
     
-    .modal-content h2 {
-        font-size: 1.3em;
+    .cell {
+        font-size: clamp(1.1em, 5vw, 1.8em);
     }
 }
 
-@media (max-width: 480px) {
-    #info-modal-content {
-        max-height: 70vh;
+@media (max-width: 360px) {
+    #game-board {
+        padding: 3px;
+        gap: 3px;
+    }
+    
+    .cell {
+        font-size: clamp(1em, 4.5vw, 1.6em);
     }
     
     .score-box {
-        min-width: 90px;
+        min-width: 75px;
+        padding: 3px 5px;
     }
-    
-    .score-value {
-        font-size: 1.3em;
-    }
-    
-    .score-moves-label {
-        font-size: 0.65em;
-    }
-}
-
-#info-modal .modal-content {
-    max-width: 600px;
-}
-
-.modal-overlay.active .modal-content {
-    transform: scale(1);
-}
-
-.modal-content h2 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.5em;
-    font-weight: bold;
-}
-
-.modal-content p {
-    font-size: 1.1em;
-    margin-bottom: 10px;
-    line-height: 1.5;
-}
-
-#game-over-modal #modal-steps-score-text {
-    font-size: 1.1em;
-    margin-bottom: 15px;
-    line-height: 1.5;
-}
-
-#game-over-modal #modal-feedback-text {
-    margin-top: 0;
-    margin-bottom: 20px;
-}
-
-.modal-feedback {
-    font-size: 0.95em;
-    color: var(--text-dark);
-}
-
-.modal-feedback strong {
-    font-weight: bold;
-}
-
-/* 弹窗按钮样式 */
-#modal-restart-button,
-.modal-action-button,
-#restart-confirm-yes,
-#restart-confirm-no,
-#modal-screenshot-button {
-    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
-    background: var(--button-bg);
-    color: var(--text-light);
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    padding: 10px 20px;
-    font-size: 1em;
-    font-weight: bold;
-    min-width: 100px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-#modal-restart-button:hover,
-.modal-action-button:hover,
-#restart-confirm-yes:hover,
-#restart-confirm-no:hover,
-#modal-screenshot-button:hover {
-    background: var(--button-hover-bg);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-}
-
-#modal-restart-button:active,
-.modal-action-button:active,
-#restart-confirm-yes:active,
-#restart-confirm-no:active,
-#modal-screenshot-button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
-}
-
-#restart-confirm-no {
-    background-color: #776e65;
-}
-
-#restart-confirm-no:hover {
-    background-color: #5e554e;
-}
-
-/* 弹窗关闭按钮 */
-.modal-close-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 1.8em;
-    font-weight: bold;
-    color: var(--text-dark);
-    background: none;
-    border: none;
-    cursor: pointer;
-    line-height: 1;
-    padding: 5px;
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
-}
-
-.modal-close-btn:hover {
-    color: #333;
-    transform: rotate(90deg);
-}
-
-/* 信息弹窗内容样式 */
-#info-modal-content {
-    text-align: left;
-    max-height: 60vh;
-    overflow-y: auto;
-    font-size: 0.9em;
-    line-height: 1.6;
-    user-select: text;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-}
-
-#info-modal-content strong {
-    font-weight: bold;
-}
-
-#info-modal-content code {
-    background-color: #f0f0f0;
-    padding: 0.2em 0.4em;
-    border-radius: 3px;
-}
-
-#info-modal-content ol,
-#info-modal-content ul {
-    padding-left: 20px;
-}
-
-#info-modal-content br+br {
-    display: block;
-    margin-bottom: 0.5em;
-}
-
-#info-modal-content .secret-message-container br {
-    margin-bottom: 0;
-}
-
-#info-modal-content a {
-    color: var(--text-dark);
-    text-decoration: underline;
-}
-
-#info-modal-content a:hover {
-    color: var(--button-hover-bg);
-}
-
-/* 存档/读档区域样式 */
-.save-load-section {
-    margin-bottom: 15px;
-}
-
-.save-load-section h3 {
-    font-size: 1.2em;
-    margin-bottom: 8px;
-}
-
-.save-load-section textarea {
-    width: calc(100% - 20px);
-    margin-bottom: 10px;
-    font-size: 0.9em;
-    padding: 8px;
-    border-radius: 3px;
-    border: 1px solid #ccc;
-    resize: vertical;
-    box-sizing: border-box;
-    user-select: text;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-}
-
-/* 彩带效果 */
-.confetti-particle {
-    position: fixed;
-    pointer-events: none;
-    z-index: 9999;
-    border-radius: 50%;
-}
-
-/* 提示通知样式 */
-#toast-notification {
-    position: fixed;
-    left: 50%;
-    top: 25%;
-    transform: translate(-50%, -50%);
-    padding: 15px 25px;
-    border-radius: 8px;
-    z-index: 10000;
-    text-align: center;
-    font-size: 1.1em;
-    font-weight: bold;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-#toast-notification.success {
-    background-color: rgba(0, 0, 0, 0.75);
-    color: var(--text-light);
-}
-
-#toast-notification.error {
-    background-color: rgba(200, 50, 50, 0.85);
-    color: var(--text-light);
-}
-
-#toast-notification.warning {
-    background-color: rgba(230, 160, 0, 0.85);
-    color: #333;
-}
-
-#toast-notification.info_dark {
-    background-color: rgba(20, 20, 20, 0.9);
-    color: white;
-    font-size: 1em;
-    padding: 12px 20px;
-}
-
-#toast-notification.visible {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-}
-
-#toast-notification:not(.visible) {
-    transform: translate(-50%, -70%) scale(0.95);
-}
-
-/* 页脚样式 */
-#footer-credit {
-    text-align: center;
-    padding: 20px 10px;
-    font-size: 0.8em;
-    color: var(--footer-text-color);
-    width: 100%;
-    box-sizing: border-box;
-}
-
-#footer-credit a {
-    color: var(--footer-text-color);
-    text-decoration: underline;
-}
-
-#footer-credit a:hover {
-    color: var(--footer-link-hover-color);
-}
-
-/* 游戏结束统计信息样式 */
-.game-end-stats {
-    text-align: center;
-    padding: 10px 15px;
-    margin: 10px 0;
-    background-color: rgba(238, 228, 218, 0.85);
-    border-radius: 6px;
-    font-size: 1.1em;
-    color: var(--text-dark);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.game-end-stats strong {
-    font-weight: bold;
-    color: #776e65;
-}
-
-/* 响应式布局 */
-@media (max-width: 600px) {
-    .game-wrapper {
-        margin: 10px auto;
-        padding: 0 5px;
-        max-width: 100%;
-    }
-    
-    #game-board {
-        padding: 8px;
-        gap: 8px;
-    }
-    
-    .modal-content {
-        max-width: calc(100% - 30px);
-        padding: 15px;
-    }
-    
-    .modal-content h2 {
-        font-size: 1.3em;
-    }
-}
-
-@media (max-width: 480px) {
-    #info-modal-content {
-        max-height: 70vh;
-    }
-    
-    .score-box {
-        min-width: 90px;
-    }
-    
-    .score-value {
-        font-size: 1.3em;
-    }
-    
-    .score-moves-label {
-        font-size: 0.65em;
-    }
-}
-
-#info-modal .modal-content {
-    max-width: 600px;
-}
-
-.modal-overlay.active .modal-content {
-    transform: scale(1);
-}
-
-.modal-content h2 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.5em;
-    font-weight: bold;
-}
-
-.modal-content p {
-    font-size: 1.1em;
-    margin-bottom: 10px;
-    line-height: 1.5;
-}
-
-#game-over-modal #modal-steps-score-text {
-    font-size: 1.1em;
-    margin-bottom: 15px;
-    line-height: 1.5;
-}
-
-#game-over-modal #modal-feedback-text {
-    margin-top: 0;
-    margin-bottom: 20px;
-}
-
-.modal-feedback {
-    font-size: 0.95em;
-    color: var(--text-dark);
-}
-
-.modal-feedback strong {
-    font-weight: bold;
-}
-
-/* 弹窗按钮样式 */
-#modal-restart-button,
-.modal-action-button,
-#restart-confirm-yes,
-#restart-confirm-no,
-#modal-screenshot-button {
-    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
-    background: var(--button-bg);
-    color: var(--text-light);
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    padding: 10px 20px;
-    font-size: 1em;
-    font-weight: bold;
-    min-width: 100px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-#modal-restart-button:hover,
-.modal-action-button:hover,
-#restart-confirm-yes:hover,
-#restart-confirm-no:hover,
-#modal-screenshot-button:hover {
-    background: var(--button-hover-bg);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-}
-
-#modal-restart-button:active,
-.modal-action-button:active,
-#restart-confirm-yes:active,
-#restart-confirm-no:active,
-#modal-screenshot-button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
-}
-
-#restart-confirm-no {
-    background-color: #776e65;
-}
-
-#restart-confirm-no:hover {
-    background-color: #5e554e;
-}
-
-/* 弹窗关闭按钮 */
-.modal-close-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 1.8em;
-    font-weight: bold;
-    color: var(--text-dark);
-    background: none;
-    border: none;
-    cursor: pointer;
-    line-height: 1;
-    padding: 5px;
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
-}
-
-.modal-close-btn:hover {
-    color: #333;
-    transform: rotate(90deg);
-}
-
-/* 信息弹窗内容样式 */
-#info-modal-content {
-    text-align: left;
-    max-height: 60vh;
-    overflow-y: auto;
-    font-size: 0.9em;
-    line-height: 1.6;
-    user-select: text;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-}
-
-#info-modal-content strong {
-    font-weight: bold;
-}
-
-#info-modal-content code {
-    background-color: #f0f0f0;
-    padding: 0.2em 0.4em;
-    border-radius: 3px;
-}
-
-#info-modal-content ol,
-#info-modal-content ul {
-    padding-left: 20px;
-}
-
-#info-modal-content br+br {
-    display: block;
-    margin-bottom: 0.5em;
-}
-
-#info-modal-content .secret-message-container br {
-    margin-bottom: 0;
-}
-
-#info-modal-content a {
-    color: var(--text-dark);
-    text-decoration: underline;
-}
-
-#info-modal-content a:hover {
-    color: var(--button-hover-bg);
-}
-
-/* 存档/读档区域样式 */
-.save-load-section {
-    margin-bottom: 15px;
-}
-
-.save-load-section h3 {
-    font-size: 1.2em;
-    margin-bottom: 8px;
-}
-
-.save-load-section textarea {
-    width: calc(100% - 20px);
-    margin-bottom: 10px;
-    font-size: 0.9em;
-    padding: 8px;
-    border-radius: 3px;
-    border: 1px solid #ccc;
-    resize: vertical;
-    box-sizing: border-box;
-    user-select: text;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-}
-
-/* 彩带效果 */
-.confetti-particle {
-    position: fixed;
-    pointer-events: none;
-    z-index: 9999;
-    border-radius: 50%;
-}
-
-/* 提示通知样式 */
-#toast-notification {
-    position: fixed;
-    left: 50%;
-    top: 25%;
-    transform: translate(-50%, -50%);
-    padding: 15px 25px;
-    border-radius: 8px;
-    z-index: 10000;
-    text-align: center;
-    font-size: 1.1em;
-    font-weight: bold;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-#toast-notification.success {
-    background-color: rgba(0, 0, 0, 0.75);
-    color: var(--text-light);
-}
-
-#toast-notification.error {
-    background-color: rgba(200, 50, 50, 0.85);
-    color: var(--text-light);
-}
-
-#toast-notification.warning {
-    background-color: rgba(230, 160, 0, 0.85);
-    color: #333;
-}
-
-#toast-notification.info_dark {
-    background-color: rgba(20, 20, 20, 0.9);
-    color: white;
-    font-size: 1em;
-    padding: 12px 20px;
-}
-
-#toast-notification.visible {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-}
-
-#toast-notification:not(.visible) {
-    transform: translate(-50%, -70%) scale(0.95);
-}
-
-/* 页脚样式 */
-#footer-credit {
-    text-align: center;
-    padding: 20px 10px;
-    font-size: 0.8em;
-    color: var(--footer-text-color);
-    width: 100%;
-    box-sizing: border-box;
-}
-
-#footer-credit a {
-    color: var(--footer-text-color);
-    text-decoration: underline;
-}
-
-#footer-credit a:hover {
-    color: var(--footer-link-hover-color);
-}
-
-/* 游戏结束统计信息样式 */
-.game-end-stats {
-    text-align: center;
-    padding: 10px 15px;
-    margin: 10px 0;
-    background-color: rgba(238, 228, 218, 0.85);
-    border-radius: 6px;
-    font-size: 1.1em;
-    color: var(--text-dark);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.game-end-stats strong {
-    font-weight: bold;
-    color: #776e65;
-}
-
-/* 响应式布局 */
-@media (max-width: 600px) {
-    .game-wrapper {
-        margin: 10px auto;
-        padding: 0 5px;
-        max-width: 100%;
-    }
-    
-    #game-board {
-        padding: 8px;
-        gap: 8px;
-    }
-    
-    .modal-content {
-        max-width: calc(100% - 30px);
-        padding: 15px;
-    }
-    
-    .modal-content h2 {
-        font-size: 1.3em;
-    }
-}
-
-@media (max-width: 480px) {
-    #info-modal-content {
-        max-height: 70vh;
-    }
-    
-    .score-box {
-        min-width: 90px;
-    }
-    
-    .score-value {
-        font-size: 1.3em;
-    }
-    
-    .score-moves-label {
-        font-size: 0.65em;
-    }
-}
-
-#info-modal .modal-content {
-    max-width: 600px;
-}
-
-.modal-overlay.active .modal-content {
-    transform: scale(1);
-}
-
-.modal-content h2 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.5em;
-    font-weight: bold;
-}
-
-.modal-content p {
-    font-size: 1.1em;
-    margin-bottom: 10px;
-    line-height: 1.5;
-}
-
-#game-over-modal #modal-steps-score-text {
-    font-size: 1.1em;
-    margin-bottom: 15px;
-    line-height: 1.5;
-}
-
-#game-over-modal #modal-feedback-text {
-    margin-top: 0;
-    margin-bottom: 20px;
-}
-
-.modal-feedback {
-    font-size: 0.95em;
-    color: var(--text-dark);
-}
-
-.modal-feedback strong {
-    font-weight: bold;
-}
-
-/* 弹窗按钮样式 */
-#modal-restart-button,
-.modal-action-button,
-#restart-confirm-yes,
-#restart-confirm-no,
-#modal-screenshot-button {
-    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
-    background: var(--button-bg);
-    color: var(--text-light);
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    padding: 10px 20px;
-    font-size: 1em;
-    font-weight: bold;
-    min-width: 100px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-#modal-restart-button:hover,
-.modal-action-button:hover,
-#restart-confirm-yes:hover,
-#restart-confirm-no:hover,
-#modal-screenshot-button:hover {
-    background: var(--button-hover-bg);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-}
-
-#modal-restart-button:active,
-.modal-action-button:active,
-#restart-confirm-yes:active,
-#restart-confirm-no:active,
-#modal-screenshot-button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
-}
-
-#restart-confirm-no {
-    background-color: #776e65;
-}
-
-#restart-confirm-no:hover {
-    background-color: #5e554e;
-}
-
-/* 弹窗关闭按钮 */
-.modal-close-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 1.8em;
-    font-weight: bold;
-    color: var(--text-dark);
-    background: none;
-    border: none;
-    cursor: pointer;
-    line-height: 1;
-    padding: 5px;
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
-}
-
-.modal-close-btn:hover {
-    color: #333;
-    transform: rotate(90deg);
-}
-
-/* 信息弹窗内容样式 */
-#info-modal-content {
-    text-align: left;
-    max-height: 60vh;
-    overflow-y: auto;
-    font-size: 0.9em;
-    line-height: 1.6;
-    user-select: text;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-}
-
-#info-modal-content strong {
-    font-weight: bold;
-}
-
-#info-modal-content code {
-    background-color: #f0f0f0;
-    padding: 0.2em 0.4em;
-    border-radius: 3px;
-}
-
-#info-modal-content ol,
-#info-modal-content ul {
-    padding-left: 20px;
-}
-
-#info-modal-content br+br {
-    display: block;
-    margin-bottom: 0.5em;
-}
-
-#info-modal-content .secret-message-container br {
-    margin-bottom: 0;
-}
-
-#info-modal-content a {
-    color: var(--text-dark);
-    text-decoration: underline;
-}
-
-#info-modal-content a:hover {
-    color: var(--button-hover-bg);
-}
-
-/* 存档/读档区域样式 */
-.save-load-section {
-    margin-bottom: 15px;
-}
-
-.save-load-section h3 {
-    font-size: 1.2em;
-    margin-bottom: 8px;
-}
-
-.save-load-section textarea {
-    width: calc(100% - 20px);
-    margin-bottom: 10px;
-    font-size: 0.9em;
-    padding: 8px;
-    border-radius: 3px;
-    border: 1px solid #ccc;
-    resize: vertical;
-    box-sizing: border-box;
-    user-select: text;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-}
-
-/* 彩带效果 */
-.confetti-particle {
-    position: fixed;
-    pointer-events: none;
-    z-index: 9999;
-    border-radius: 50%;
-}
-
-/* 提示通知样式 */
-#toast-notification {
-    position: fixed;
-    left: 50%;
-    top: 25%;
-    transform: translate(-50%, -50%);
-    padding: 15px 25px;
-    border-radius: 8px;
-    z-index: 10000;
-    text-align: center;
-    font-size: 1.1em;
-    font-weight: bold;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-#toast-notification.success {
-    background-color: rgba(0, 0, 0, 0.75);
-    color: var(--text-light);
-}
-
-#toast-notification.error {
-    background-color: rgba(200, 50, 50, 0.85);
-    color: var(--text-light);
-}
-
-#toast-notification.warning {
-    background-color: rgba(230, 160, 0, 0.85);
-    color: #333;
-}
-
-#toast-notification.info_dark {
-    background-color: rgba(20, 20, 20, 0.9);
-    color: white;
-    font-size: 1em;
-    padding: 12px 20px;
-}
-
-#toast-notification.visible {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-}
-
-#toast-notification:not(.visible) {
-    transform: translate(-50%, -70%) scale(0.95);
-}
-
-/* 页脚样式 */
-#footer-credit {
-    text-align: center;
-    padding: 20px 10px;
-    font-size: 0.8em;
-    color: var(--footer-text-color);
-    width: 100%;
-    box-sizing: border-box;
-}
-
-#footer-credit a {
-    color: var(--footer-text-color);
-    text-decoration: underline;
-}
-
-#footer-credit a:hover {
-    color: var(--footer-link-hover-color);
-}
-
-/* 游戏结束统计信息样式 */
-.game-end-stats {
-    text-align: center;
-    padding: 10px 15px;
-    margin: 10px 0;
-    background-color: rgba(238, 228, 218, 0.85);
-    border-radius: 6px;
-    font-size: 1.1em;
-    color: var(--text-dark);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.game-end-stats strong {
-    font-weight: bold;
-    color: #776e65;
-}
-
-/* 响应式布局 */
-@media (max-width: 600px) {
-    .game-wrapper {
-        margin: 10px auto;
-        padding: 0 5px;
-        max-width: 100%;
-    }
-    
-    #game-board {
-        padding: 8px;
-        gap: 8px;
-    }
-    
-    .modal-content {
-        max-width: calc(100% - 30px);
-        padding: 15px;
-    }
-    
-    .modal-content h2 {
-        font-size: 1.3em;
-    }
-}
-
-@media (max-width: 480px) {
-    #info-modal-content {
-        max-height: 70vh;
-    }
-    
-    .score-box {
-        min-width: 90px;
-    }
-    
-    .score-value {
-        font-size: 1.3em;
-    }
-    
-    .score-moves-label {
-        font-size: 0.65em;
-    }
-}
-
-#info-modal .modal-content {
-    max-width: 600px;
-}
-
-.modal-overlay.active .modal-content {
-    transform: scale(1);
-}
-
-.modal-content h2 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.5em;
-    font-weight: bold;
-}
-
-.modal-content p {
-    font-size: 1.1em;
-    margin-bottom: 10px;
-    line-height: 1.5;
-}
-
-#game-over-modal #modal-steps-score-text {
-    font-size: 1.1em;
-    margin-bottom: 15px;
-    line-height: 1.5;
-}
-
-#game-over-modal #modal-feedback-text {
-    margin-top: 0;
-    margin-bottom: 20px;
-}
-
-.modal-feedback {
-    font-size: 0.95em;
-    color: var(--text-dark);
-}
-
-.modal-feedback strong {
-    font-weight: bold;
-}
-
-/* 弹窗按钮样式 */
-#modal-restart-button,
-.modal-action-button,
-#restart-confirm-yes,
-#restart-confirm-no,
-#modal-screenshot-button {
-    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
-    background: var(--button-bg);
-    color: var(--text-light);
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    padding: 10px 20px;
-    font-size: 1em;
-    font-weight: bold;
-    min-width: 100px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-#modal-restart-button:hover,
-.modal-action-button:hover,
-#restart-confirm-yes:hover,
-#restart-confirm-no:hover,
-#modal-screenshot-button:hover {
-    background: var(--button-hover-bg);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-}
-
-#modal-restart-button:active,
-.modal-action-button:active,
-#restart-confirm-yes:active,
-#restart-confirm-no:active,
-#modal-screenshot-button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
-}
-
-#restart-confirm-no {
-    background-color: #776e65;
-}
-
-#restart-confirm-no:hover {
-    background-color: #5e554e;
-}
-
-/* 弹窗关闭按钮 */
-.modal-close-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 1.8em;
-    font-weight: bold;
-    color: var(--text-dark);
-    background: none;
-    border: none;
-    cursor: pointer;
-    line-height: 1;
-    padding: 5px;
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
-}
-
-.modal-close-btn:hover {
-    color: #333;
-    transform: rotate(90deg);
-}
-
-/* 信息弹窗内容样式 */
-#info-modal-content {
-    text-align: left;
-    max-height: 60vh;
-    overflow-y: auto;
-    font-size: 0.9em;
-    line-height: 1.6;
-    user-select: text;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-}
-
-#info-modal-content strong {
-    font-weight: bold;
-}
-
-#info-modal-content code {
-    background-color: #f0f0f0;
-    padding: 0.2em 0.4em;
-    border-radius: 3px;
-}
-
-#info-modal-content ol,
-#info-modal-content ul {
-    padding-left: 20px;
-}
-
-#info-modal-content br+br {
-    display: block;
-    margin-bottom: 0.5em;
-}
-
-#info-modal-content .secret-message-container br {
-    margin-bottom: 0;
-}
-
-#info-modal-content a {
-    color: var(--text-dark);
-    text-decoration: underline;
-}
-
-#info-modal-content a:hover {
-    color: var(--button-hover-bg);
-}
-
-/* 存档/读档区域样式 */
-.save-load-section {
-    margin-bottom: 15px;
-}
-
-.save-load-section h3 {
-    font-size: 1.2em;
-    margin-bottom: 8px;
-}
-
-.save-load-section textarea {
-    width: calc(100% - 20px);
-    margin-bottom: 10px;
-    font-size: 0.9em;
-    padding: 8px;
-    border-radius: 3px;
-    border: 1px solid #ccc;
-    resize: vertical;
-    box-sizing: border-box;
-    user-select: text;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-}
-
-/* 彩带效果 */
-.confetti-particle {
-    position: fixed;
-    pointer-events: none;
-    z-index: 9999;
-    border-radius: 50%;
-}
-
-/* 提示通知样式 */
-#toast-notification {
-    position: fixed;
-    left: 50%;
-    top: 25%;
-    transform: translate(-50%, -50%);
-    padding: 15px 25px;
-    border-radius: 8px;
-    z-index: 10000;
-    text-align: center;
-    font-size: 1.1em;
-    font-weight: bold;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-#toast-notification.success {
-    background-color: rgba(0, 0, 0, 0.75);
-    color: var(--text-light);
-}
-
-#toast-notification.error {
-    background-color: rgba(200, 50, 50, 0.85);
-    color: var(--text-light);
-}
-
-#toast-notification.warning {
-    background-color: rgba(230, 160, 0, 0.85);
-    color: #333;
-}
-
-#toast-notification.info_dark {
-    background-color: rgba(20, 20, 20, 0.9);
-    color: white;
-    font-size: 1em;
-    padding: 12px 20px;
-}
-
-#toast-notification.visible {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-}
-
-#toast-notification:not(.visible) {
-    transform: translate(-50%, -70%) scale(0.95);
-}
-
-/* 页脚样式 */
-#footer-credit {
-    text-align: center;
-    padding: 20px 10px;
-    font-size: 0.8em;
-    color: var(--footer-text-color);
-    width: 100%;
-    box-sizing: border-box;
 }
