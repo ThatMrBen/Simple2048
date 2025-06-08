@@ -21,6 +21,9 @@ class GameUI {
         this.onImportState = onImportState;
         
         this.isAnimating = false;
+        this.animationInterrupted = false;
+        this.animationTimer = null;
+        this.hasNewMoveRequest = false;
         this.touchStartX = 0;
         this.touchStartY = 0;
         
@@ -497,7 +500,7 @@ ${projectInfo}`;
                 
                 // 创建移动的方块
                 const movingCell = document.createElement('div');
-                movingCell.className = `cell cell-number cell-${value}`;
+                movingCell.className = `cell cell-number cell-${value} cell-moving`;
                 movingCell.textContent = value;
                 movingCell.dataset.row = to.r;
                 movingCell.dataset.col = to.c;
@@ -539,7 +542,7 @@ ${projectInfo}`;
                 
                 // 创建被动方块（接收合并的方块）
                 const passiveCell = document.createElement('div');
-                passiveCell.className = `cell cell-number cell-${halfValue}`;
+                passiveCell.className = `cell cell-number cell-${halfValue} cell-merging-passive`;
                 passiveCell.textContent = halfValue;
                 passiveCell.dataset.row = finalPosition.r;
                 passiveCell.dataset.col = finalPosition.c;
@@ -552,7 +555,7 @@ ${projectInfo}`;
                 
                 // 创建主动方块（移动过来合并的方块）
                 const activeCell = document.createElement('div');
-                activeCell.className = `cell cell-number cell-${halfValue}`;
+                activeCell.className = `cell cell-number cell-${halfValue} cell-merging-active`;
                 activeCell.textContent = halfValue;
                 activeCell.dataset.row = finalPosition.r;
                 activeCell.dataset.col = finalPosition.c;
@@ -585,7 +588,7 @@ ${projectInfo}`;
                 setTimeout(() => {
                     // 创建最终合并后的方块
                     const mergedCell = document.createElement('div');
-                    mergedCell.className = `cell cell-number cell-${value} cell-merging-passive`;
+                    mergedCell.className = `cell cell-number cell-${value} cell-merging-result`;
                     mergedCell.textContent = value;
                     mergedCell.dataset.row = finalPosition.r;
                     mergedCell.dataset.col = finalPosition.c;
@@ -598,83 +601,88 @@ ${projectInfo}`;
                     
                     this.gameBoardDiv.appendChild(mergedCell);
                     
-                    // 淡出合并的方块
-                    activeCell.style.opacity = '0';
-                    passiveCell.style.opacity = '0';
+                    // 移除原始方块
                     setTimeout(() => {
-                        activeCell.remove();
                         passiveCell.remove();
-                    }, 180);
-                    
-                    // 将合并后的方块添加到现有方块映射中
-                    existingCells[finalKey] = mergedCell;
-                }, 180);
+                        activeCell.remove();
+                        
+                        // 将合并后的方块添加到现有方块映射中
+                        existingCells[finalKey] = mergedCell;
+                    }, 100);
+                }, 170); // 等待移动完成后再开始合并动画
             }
         }
         
-        // 处理新方块
-        if (lastMoveInfo.newTile && 
-            lastMoveInfo.newTile.position && 
-            lastMoveInfo.newTile.value !== undefined && 
-            !isNaN(lastMoveInfo.newTile.value)) {
+        // 处理新方块动画
+        if (lastMoveInfo.newTile) {
+            const newTile = lastMoveInfo.newTile;
+            const newTileKey = `${newTile.position.r},${newTile.position.c}`;
             
-            const { position, value } = lastMoveInfo.newTile;
-            const newTileKey = `${position.r},${position.c}`;
+            // 如果这个位置已经有方块，则不添加新方块
+            if (existingCells[newTileKey]) {
+                existingCells[newTileKey].remove();
+            }
             
-            // 直接在正确位置创建新方块
+            // 创建新方块
             const newCell = document.createElement('div');
-            newCell.className = `cell cell-number cell-${value}`;
-            newCell.textContent = value;
-            newCell.dataset.row = position.r;
-            newCell.dataset.col = position.c;
+            newCell.className = `cell cell-number cell-${newTile.value} cell-new`;
+            newCell.textContent = newTile.value;
+            newCell.dataset.row = newTile.position.r;
+            newCell.dataset.col = newTile.position.c;
             newCell.style.position = 'absolute';
             newCell.style.width = `${cellSize}px`;
             newCell.style.height = `${cellSize}px`;
-            newCell.style.top = `${position.r * (cellSize + gap) + gap}px`;
-            newCell.style.left = `${position.c * (cellSize + gap) + gap}px`;
-            newCell.style.zIndex = '3';
-            
-            // 设置初始样式，使新方块从小到大出现
+            newCell.style.top = `${newTile.position.r * (cellSize + gap) + gap}px`;
+            newCell.style.left = `${newTile.position.c * (cellSize + gap) + gap}px`;
+            newCell.style.zIndex = '2';
             newCell.style.transform = 'scale(0)';
-            newCell.style.opacity = '0';
             
             this.gameBoardDiv.appendChild(newCell);
             
-            // 触发动画，稍微延迟以确保其他动画有时间完成
-            setTimeout(() => {
-                newCell.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+            // 使用requestAnimationFrame确保在下一帧添加动画
+            requestAnimationFrame(() => {
+                newCell.style.transition = 'transform 0.15s ease-in-out';
                 newCell.style.transform = 'scale(1)';
-                newCell.style.opacity = '1';
-            }, 200);
+            });
             
             // 将新方块添加到现有方块映射中
             existingCells[newTileKey] = newCell;
         }
         
-        // 延迟较长时间后检查并填补缺失的方块
+        // 设置一个计时器，等待所有动画完成后清理DOM
         setTimeout(() => {
-            // 检查当前棋盘上是否有缺失的方块
-            for (const posKey in currentBoard) {
-                if (!existingCells[posKey]) {
-                    const [r, c] = posKey.split(',').map(Number);
-                    const cellValue = currentBoard[posKey];
-                    
-                    const finalCell = document.createElement('div');
-                    finalCell.className = `cell cell-number cell-${cellValue}`;
-                    finalCell.textContent = cellValue;
-                    finalCell.dataset.row = r;
-                    finalCell.dataset.col = c;
-                    finalCell.style.position = 'absolute';
-                    finalCell.style.width = `${cellSize}px`;
-                    finalCell.style.height = `${cellSize}px`;
-                    finalCell.style.top = `${r * (cellSize + gap) + gap}px`;
-                    finalCell.style.left = `${c * (cellSize + gap) + gap}px`;
-                    finalCell.style.zIndex = '2';
-                    
-                    this.gameBoardDiv.appendChild(finalCell);
-                }
+            // 如果动画已经被中断，不执行清理操作
+            if (this.animationInterrupted) {
+                this.animationInterrupted = false;
+                return;
             }
-        }, 350);
+            
+            // 如果有新的移动请求，不执行清理操作，让finishCurrentAnimations处理
+            if (this.hasNewMoveRequest) {
+                return;
+            }
+            
+            // 移除所有临时动画类
+            const animatedCells = this.gameBoardDiv.querySelectorAll('.cell-moving, .cell-merging-active, .cell-merging-passive, .cell-merging-result, .cell-new');
+            animatedCells.forEach(cell => {
+                cell.classList.remove('cell-moving', 'cell-merging-active', 'cell-merging-passive', 'cell-merging-result', 'cell-new');
+                cell.style.transition = '';
+                cell.style.position = '';
+                cell.style.zIndex = '';
+            });
+            
+            // 确保棋盘状态与最新状态一致
+            this.renderStaticBoard(board);
+            
+            // 触发动画完成事件
+            const event = new CustomEvent('animationComplete');
+            this.gameBoardDiv.dispatchEvent(event);
+            
+            // 检查是否有游戏结束检查的回调
+            if (window.game && typeof window.game.checkGameStatus === 'function') {
+                window.game.checkGameStatus();
+            }
+        }, 300); // 等待所有动画完成
     }
     
     /**
@@ -923,8 +931,23 @@ ${projectInfo}`;
         
         // 如果设置为不在动画中，确保所有动画都能正常完成
         if (!isAnimating) {
-            // 这里不需要做任何额外处理，让动画在后台继续运行
-            // 动画完成后会自动清理
+            // 清除可能存在的任何动画计时器
+            if (this.animationTimer) {
+                clearTimeout(this.animationTimer);
+                this.animationTimer = null;
+            }
+            
+            // 检查是否有动画元素正在进行动画
+            const animatingElements = document.querySelectorAll('.cell-moving, .cell-merging-active, .cell-merging-passive, .cell-new');
+            
+            // 如果有动画元素，等待它们完成
+            if (animatingElements.length > 0) {
+                // 设置一个合理的时间来等待所有动画完成
+                this.animationTimer = setTimeout(() => {
+                    this.isAnimating = false;
+                    this.animationTimer = null;
+                }, 200);
+            }
         }
     }
     
@@ -981,6 +1004,70 @@ ${projectInfo}`;
                     this.gameEndStatsDiv = null;
                 }
             }, 300);
+        }
+    }
+    
+    /**
+     * 快速完成当前所有动画
+     * 当收到新的移动指令时，快速完成当前正在进行的动画
+     */
+    finishCurrentAnimations() {
+        // 如果没有新的移动请求，不执行加速
+        if (!this.hasNewMoveRequest) {
+            return;
+        }
+        
+        // 标记动画已被中断
+        this.animationInterrupted = true;
+        
+        // 清除可能存在的动画计时器
+        if (this.animationTimer) {
+            clearTimeout(this.animationTimer);
+            this.animationTimer = null;
+        }
+        
+        // 获取所有正在进行动画的元素
+        const movingCells = document.querySelectorAll('.cell-moving');
+        const mergingActiveCells = document.querySelectorAll('.cell-merging-active');
+        const mergingPassiveCells = document.querySelectorAll('.cell-merging-passive');
+        const mergingResultCells = document.querySelectorAll('.cell-merging-result');
+        const newCells = document.querySelectorAll('.cell-new');
+        
+        // 快速完成移动动画
+        movingCells.forEach(cell => {
+            const r = parseInt(cell.dataset.row);
+            const c = parseInt(cell.dataset.col);
+            const cellSize = cell.offsetWidth;
+            const boardWidth = this.gameBoardDiv.offsetWidth;
+            const gap = (boardWidth - cellSize * 4) / 5; // 假设4x4棋盘
+            
+            // 立即移动到目标位置
+            cell.style.transition = 'none';
+            cell.style.top = `${r * (cellSize + gap) + gap}px`;
+            cell.style.left = `${c * (cellSize + gap) + gap}px`;
+        });
+        
+        // 快速完成合并动画
+        mergingActiveCells.forEach(cell => cell.remove());
+        mergingPassiveCells.forEach(cell => cell.remove());
+        
+        // 确保合并结果立即显示
+        mergingResultCells.forEach(cell => {
+            cell.style.transition = 'none';
+            cell.style.transform = 'scale(1)';
+            cell.style.opacity = '1';
+        });
+        
+        // 快速完成新方块出现动画
+        newCells.forEach(cell => {
+            cell.style.transition = 'none';
+            cell.style.transform = 'scale(1)';
+            cell.style.opacity = '1';
+        });
+        
+        // 立即渲染当前棋盘状态
+        if (window.game && window.game.board) {
+            this.renderStaticBoard(window.game.board.getBoard());
         }
     }
 }

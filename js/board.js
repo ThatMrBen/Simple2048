@@ -72,6 +72,11 @@ class GameBoard {
      * @returns {boolean} - 如果游戏结束返回true
      */
     isGameOver() {
+        // 检查是否有动画正在进行
+        if (window.game && window.game.ui && window.game.ui.isAnimating) {
+            return false; // 如果动画正在进行，游戏不应该结束
+        }
+        
         // 如果棋盘上有空位，游戏未结束
         for (let r = 0; r < this.size; r++) {
             for (let c = 0; c < this.size; c++) {

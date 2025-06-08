@@ -79,8 +79,26 @@ class Game {
             return;
         }
         
-        // 如果当前正在动画中，忽略该操作
-        if (this.ui.isAnimating) return;
+        // 如果当前正在动画中，并且收到了新的移动指令，才快速完成当前动画
+        if (this.ui.isAnimating && this.ui.hasNewMoveRequest) {
+            // 快速完成当前所有动画
+            this.ui.finishCurrentAnimations();
+            
+            // 短暂延迟后执行新的移动
+            setTimeout(() => {
+                this.ui.setAnimating(false);
+                this.ui.hasNewMoveRequest = false;
+                this.handleMove(direction);
+            }, 50);
+            return;
+        } else if (this.ui.isAnimating) {
+            // 如果正在动画中但没有新的移动请求，标记有新的移动请求
+            this.ui.hasNewMoveRequest = true;
+            return;
+        }
+        
+        // 重置新移动请求标记
+        this.ui.hasNewMoveRequest = false;
         
         // 设置动画状态
         this.ui.setAnimating(true);
@@ -101,14 +119,17 @@ class Game {
                 this.bestMoves
             );
             
-            // 立即重置动画状态，允许用户继续操作
-            this.ui.setAnimating(false);
-            
-            // 检查游戏状态
-            this.checkGameStatus();
-            
-            // 保存游戏状态到本地存储
-            this.saveGameState();
+            // 等待所有动画完成后再检查游戏状态
+            setTimeout(() => {
+                // 重置动画状态
+                this.ui.setAnimating(false);
+                
+                // 检查游戏状态
+                this.checkGameStatus();
+                
+                // 保存游戏状态到本地存储
+                this.saveGameState();
+            }, 250); // 等待动画完成的时间
         } else {
             // 如果移动无效，立即重置动画状态
             this.ui.setAnimating(false);
@@ -122,6 +143,19 @@ class Game {
      * 检查游戏状态（胜利或失败）
      */
     checkGameStatus() {
+        // 如果当前正在动画中，延迟检查游戏状态
+        if (this.ui.isAnimating || this.ui.animationInterrupted) {
+            return;
+        }
+        
+        // 检查是否有动画元素正在进行动画
+        const animatingElements = document.querySelectorAll('.cell-moving, .cell-merging-active, .cell-merging-passive, .cell-merging-result, .cell-new');
+        if (animatingElements.length > 0) {
+            // 如果有动画正在进行，等待所有动画完成后再检查
+            setTimeout(() => this.checkGameStatus(), 250);
+            return;
+        }
+        
         // 检查是否达到2048
         const achieved2048 = this.board.hasWon();
         
